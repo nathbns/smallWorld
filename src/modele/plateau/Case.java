@@ -45,4 +45,11 @@ public class Case {
     }
 
 
-   }
+    public boolean getTerrain() {
+        if (biome == null) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+}

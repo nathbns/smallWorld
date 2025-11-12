@@ -9,7 +9,7 @@ import modele.jeu.Unites;
 
 public class Case {
 
-    // TODO : ajouter le biome de la case
+    protected Biome biome;
     protected Unites u;
     protected Plateau plateau;
 
@@ -24,6 +24,20 @@ public class Case {
     public Case(Plateau _plateau) {
 
         plateau = _plateau;
+    }
+
+    public Case(Plateau _plateau, Biome b) {
+
+        plateau = _plateau;
+        biome = b;
+    }
+
+    public void setBiome(Biome b){
+        biome = b;
+    }
+
+    public Biome getBiome(){
+        return biome;
     }
 
     public Unites getUnites() {

@@ -30,6 +30,9 @@ public class VueControleur extends JFrame implements Observer {
     // icones affichées dans la grille
     private Image icoElfes;
     private Image icoDesert;
+    private Image icoPlaine;
+    private Image icoForet;
+    private Image icoMontagne;
 
     private JComponent grilleIP;
     private Case caseClic1; // mémorisation des cases cliquées
@@ -63,6 +66,9 @@ public class VueControleur extends JFrame implements Observer {
 
         icoElfes = new ImageIcon("./data/units/unit_red.png").getImage();
         icoDesert = new ImageIcon("./data/terrain/desert.png").getImage();
+        icoForet = new ImageIcon("./data/terrain/foret.png").getImage();
+        icoMontagne = new ImageIcon("./data/terrain/mountain.png").getImage();
+        icoPlaine = new ImageIcon("./data/terrain/plain.png").getImage();
 
     }
 
@@ -121,8 +127,20 @@ public class VueControleur extends JFrame implements Observer {
 
         for (int x = 0; x < sizeX; x++) {
             for (int y = 0; y < sizeY; y++) {
-                // biome par défault, à adapter suivant le modèle
-                tabIP[x][y].setBackground(icoDesert);
+                switch (plateau.getCases()[x][y].getBiome()){
+                    case PLAINE:
+                        tabIP[x][y].setBackground(icoPlaine);
+                        break;
+                    case MONTAGNE:
+                        tabIP[x][y].setBackground(icoMontagne);
+                        break;
+                    case DESERT:
+                        tabIP[x][y].setBackground(icoDesert);
+                        break;
+                    case FORET:
+                        tabIP[x][y].setBackground(icoForet);
+                        break;
+                }
 
                 tabIP[x][y].setFront(null);
 

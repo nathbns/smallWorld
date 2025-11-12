@@ -12,6 +12,7 @@ import modele.jeu.Unites;
 import java.awt.Point;
 import java.util.HashMap;
 import java.util.Observable;
+import java.util.Random;
 
 
 public class Plateau extends Observable {
@@ -31,11 +32,17 @@ public class Plateau extends Observable {
         return grilleCases;
     }
 
+
+    public Biome randomBiome(){
+        int pick = new Random().nextInt(Biome.values().length);
+        return Biome.values()[pick];
+    }
+
     private void initPlateauVide() {
 
         for (int x = 0; x < SIZE_X; x++) {
             for (int y = 0; y < SIZE_Y; y++) {
-                grilleCases[x][y] = new Case(this);
+                grilleCases[x][y] = new Case(this,randomBiome());
                 map.put(grilleCases[x][y], new Point(x, y));
             }
 

@@ -6,8 +6,8 @@
 package modele.plateau;
 
 
-import modele.jeu.Elfes;
-import modele.jeu.Unites;
+import modele.jeu.peuple.Elfes;
+import modele.jeu.peuple.Unites;
 
 import java.awt.Point;
 import java.util.HashMap;

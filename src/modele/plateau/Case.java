@@ -5,7 +5,7 @@
  */
 package modele.plateau;
 
-import modele.jeu.Unites;
+import modele.jeu.peuple.Unites;
 
 public class Case {
 

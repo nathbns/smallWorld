@@ -1,4 +1,4 @@
-package modele.jeu;
+package modele.jeu.peuple;
 
 import modele.plateau.Plateau;
 

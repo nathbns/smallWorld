@@ -8,10 +8,10 @@ import java.util.Observer;
 import javax.swing.*;
 
 
-import modele.jeu.Elfes;
+import modele.jeu.peuple.Elfes;
 import modele.jeu.Coup;
 import modele.jeu.Jeu;
-import modele.jeu.Unites;
+import modele.jeu.peuple.Unites;
 import modele.plateau.Case;
 import modele.plateau.Plateau;
 
@@ -66,7 +66,7 @@ public class VueControleur extends JFrame implements Observer {
 
         icoElfes = new ImageIcon("./data/units/unit_red.png").getImage();
         icoDesert = new ImageIcon("./data/terrain/desert.png").getImage();
-        icoForet = new ImageIcon("./data/terrain/foret.png").getImage();
+        icoForet = new ImageIcon("./data/terrain/forest.png").getImage();
         icoMontagne = new ImageIcon("./data/terrain/mountain.png").getImage();
         icoPlaine = new ImageIcon("./data/terrain/plain.png").getImage();
 

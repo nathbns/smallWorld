@@ -8,7 +8,7 @@ import java.util.Observer;
 import javax.swing.*;
 
 
-import modele.jeu.peuple.Elfes;
+import modele.jeu.peuple.Elfe;
 import modele.jeu.Coup;
 import modele.jeu.Jeu;
 import modele.jeu.peuple.Unites;
@@ -146,11 +146,15 @@ public class VueControleur extends JFrame implements Observer {
 
                 Case c = plateau.getCases()[x][y];
 
+
+                //tabIP[x][y].setNbUnites(c.getUnites().); //get NB
+
+
                 if (c != null) {
 
                     Unites u = c.getUnites();
 
-                    if (u instanceof Elfes) {
+                    if (u instanceof Elfe) {
                             tabIP[x][y].setFront(icoElfes);
                     }
                 }

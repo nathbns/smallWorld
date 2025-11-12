@@ -6,8 +6,8 @@
 package modele.plateau;
 
 
-import modele.jeu.peuple.Elfes;
-import modele.jeu.peuple.Unites;
+import modele.jeu.Joueur;
+import modele.jeu.peuple.*;
 
 import java.awt.Point;
 import java.util.HashMap;
@@ -53,12 +53,84 @@ public class Plateau extends Observable {
     public void initialiser() {
 
 
-        Elfes c = new Elfes(this);
+        Elfe c = new Elfe(this);
         c.allerSurCase(grilleCases[4][7]);
 
         setChanged();
         notifyObservers();
 
+    }
+
+    public void addJoueur(Joueur [] j) {
+
+        for (int jo = 0; jo < 4; jo++){ // Boucle sur les joueurs
+
+            if(j[jo] == null){ // Si moins de 4 joueurs
+                continue;
+            }
+
+            // Choix du coin a utiliser
+            int x = 0;
+            int y = 0;
+            switch (jo){
+                case 0:
+                    x = 0;
+                    y = 0;
+                    break;
+                case 1:
+                    x = SIZE_X - 1;
+                    y = SIZE_Y - 1;
+                    break;
+                case 2:
+                    x = SIZE_X - 1;
+                    y = 0;
+                    break;
+                case 3:
+                    x = 0;
+                    y = SIZE_Y - 1;
+            }
+
+            for(int i = 0; i < j[jo].getUnites().toArray().length; i++){
+                int [] pos;
+                switch (j[jo].getPeuple()){
+                    case HUMAIN:
+                        Humain h = new Humain(this);
+                        pos = findEmptyCaseAround(x,y);
+                        h.allerSurCase(grilleCases[pos[0]][pos[1]]);
+                        break;
+                    case GOBELIN:
+                        Gobelin g = new Gobelin(this);
+                        pos = findEmptyCaseAround(x,y);
+                        g.allerSurCase(grilleCases[pos[0]][pos[1]]);
+                        break;
+                    case NAIN:
+                        Nain n = new Nain(this);
+                        pos = findEmptyCaseAround(x,y);
+                        n.allerSurCase(grilleCases[pos[0]][pos[1]]);
+                        break;
+                    case ELFE:
+                        Elfe e = new Elfe(this);
+                        pos = findEmptyCaseAround(x,y);
+                        e.allerSurCase(grilleCases[pos[0]][pos[1]]);
+                        break;
+                }
+            }
+        }
+
+
+        setChanged();
+        notifyObservers();
+
+    }
+
+    private int [] findEmptyCaseAround(int x, int y){
+        int xx = x; int yy = y;
+        while(!(xx >= 0 && xx < SIZE_X && yy >= 0 && yy < SIZE_X && grilleCases[xx][yy].getUnites() == null)){
+            xx = x; yy = y;
+            xx = xx - 2 + new Random().nextInt(5);
+            yy = yy - 2 + new Random().nextInt(5);
+        }
+        return new int[]{xx,yy};
     }
 
     public void arriverCase(Case c, Unites u) {

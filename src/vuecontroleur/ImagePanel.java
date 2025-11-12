@@ -6,6 +6,8 @@ import java.awt.*;
 public class ImagePanel extends JPanel {
     private Image imgBackground;
     private Image imgFront;
+    private int nb = 3;
+    private JTextArea nbUnites = new JTextArea(String.valueOf(nb));
 
     public void setBackground(Image _imgBackground) {
         imgBackground = _imgBackground;
@@ -14,6 +16,8 @@ public class ImagePanel extends JPanel {
     public void setFront(Image _imgFront) {
         imgFront = _imgFront;
     }
+
+    public void setNbUnites(int i){nb = i;}
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -29,6 +33,8 @@ public class ImagePanel extends JPanel {
             g.drawImage(imgFront, 10, 10, (int) (getWidth()*0.5), (int) (getHeight()*0.5), this);
         }
 
+        nbUnites.setLocation(50,50);
+        add(nbUnites);
 
     }
 }

@@ -2,6 +2,8 @@ package modele.jeu.peuple;
 
 import modele.plateau.Biome;
 
+import java.util.Random;
+
 
 public enum TypePeuple {
     HUMAIN("Humain", Biome.PLAINE, 8),
@@ -17,6 +19,11 @@ public enum TypePeuple {
         this.nom = nom;
         this.terrainFavori = terrainFavori;
         this.nombreUnitesInitial = nombreUnitesInitial;
+    }
+
+    public TypePeuple randomPeuple(){
+        int pick = new Random().nextInt(TypePeuple.values().length);
+        return TypePeuple.values()[pick];
     }
 
     public String getNom() {

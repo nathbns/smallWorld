@@ -1,8 +1,8 @@
 package modele.jeu;
 
+import modele.jeu.peuple.Nain;
 import modele.jeu.peuple.TypePeuple;
 import modele.jeu.peuple.Unites;
-import modele.plateau.Plateau;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -5,7 +5,6 @@
  */
 package modele.plateau;
 
-
 import modele.jeu.Joueur;
 import modele.jeu.peuple.*;
 
@@ -17,8 +16,8 @@ import java.util.Random;
 
 public class Plateau extends Observable {
 
-    public static final int SIZE_X = 8;
-    public static final int SIZE_Y = 8;
+    public static int SIZE_X = 8;
+    public static int SIZE_Y = 8;
 
 
     private HashMap<Case, Point> map = new  HashMap<Case, Point>(); // permet de récupérer la position d'une case à partir de sa référence

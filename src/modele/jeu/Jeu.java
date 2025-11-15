@@ -15,6 +15,8 @@ public class Jeu extends Thread{
     private Joueur j4;
     protected Coup coupRecu;
 
+    private static final int nbJoueurs = 4;
+
     public TypePeuple randomPeuple(){
         int pick = new Random().nextInt(TypePeuple.values().length);
         return TypePeuple.values()[pick];
@@ -22,14 +24,20 @@ public class Jeu extends Thread{
 
     public Jeu() {
 
-        joueurs = new Joueur[4];
+        joueurs = new Joueur[4]; //  Á changer plus tarc avec nbJoueurs
 
         // Initialisation des joueurs
-        joueurs[0] = new Joueur(this,randomPeuple(),"Rouge"); // Couleur arbitraire pour l'instant
-        joueurs[1] = new Joueur(this,randomPeuple(),"Bleu");
-        joueurs[2] = new Joueur(this,randomPeuple(),"Jaune");
-        joueurs[3] = new Joueur(this,randomPeuple(),"Vert");
-        j1 = joueurs[0];
+        for(int i = 0; i < nbJoueurs; i++){
+            joueurs[i] = new Joueur(this,randomPeuple(),"Rouge"); // Couleur arbitraire pour l'instant
+        }
+        j1 = joueurs[0]; // Pour l'instant, sert uniquement pour jouer la partie
+
+        // Taille du plateau
+        if(nbJoueurs > 2){
+            Plateau.SIZE_X = 7; Plateau.SIZE_Y = 7;
+        }else{
+            Plateau.SIZE_X = 6; Plateau.SIZE_Y = 6;
+        }
 
         // Initialisation du plateau
         plateau = new Plateau();

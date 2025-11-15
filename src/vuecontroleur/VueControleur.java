@@ -3,15 +3,15 @@ package vuecontroleur;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
 import java.util.Observable;
 import java.util.Observer;
 import javax.swing.*;
 
 
-import modele.jeu.peuple.Elfe;
+import modele.jeu.peuple.*;
 import modele.jeu.Coup;
 import modele.jeu.Jeu;
-import modele.jeu.peuple.Unites;
 import modele.plateau.Case;
 import modele.plateau.Plateau;
 
@@ -29,6 +29,9 @@ public class VueControleur extends JFrame implements Observer {
     private static final int pxCase = 100; // nombre de pixel par case
     // icones affichées dans la grille
     private Image icoElfes;
+    private Image icoHumain;
+    private Image icoGobelin;
+    private Image icoNain;
     private Image icoDesert;
     private Image icoPlaine;
     private Image icoForet;
@@ -48,8 +51,6 @@ public class VueControleur extends JFrame implements Observer {
         sizeX = plateau.SIZE_X;
         sizeY = plateau.SIZE_Y;
 
-
-
         chargerLesIcones();
         placerLesComposantsGraphiques();
 
@@ -65,10 +66,14 @@ public class VueControleur extends JFrame implements Observer {
         //icoDesert = new ImageIcon("./data/res/desert.png").getImage();
 
         icoElfes = new ImageIcon("./data/units/unit_red.png").getImage();
+        icoNain = new ImageIcon("./data/units/unit_blue.png").getImage();
+        icoHumain = new ImageIcon("./data/units/unit_yellow.png").getImage();
+        icoGobelin = new ImageIcon("./data/units/unit_green.png").getImage();
         icoDesert = new ImageIcon("./data/terrain/desert.png").getImage();
         icoForet = new ImageIcon("./data/terrain/forest.png").getImage();
         icoMontagne = new ImageIcon("./data/terrain/mountain.png").getImage();
         icoPlaine = new ImageIcon("./data/terrain/plain.png").getImage();
+
 
     }
 
@@ -152,8 +157,18 @@ public class VueControleur extends JFrame implements Observer {
 
                     Unites u = c.getUnites();
 
+                    // Moche mais juste pour tester si ça marche
                     if (u instanceof Elfe) {
-                            tabIP[x][y].setFront(icoElfes);
+                        tabIP[x][y].setFront(icoElfes);
+                    }
+                    if (u instanceof Humain) {
+                        tabIP[x][y].setFront(icoHumain);
+                    }
+                    if (u instanceof Nain) {
+                        tabIP[x][y].setFront(icoNain);
+                    }
+                    if (u instanceof Gobelin) {
+                        tabIP[x][y].setFront(icoGobelin);
                     }
                 }
 

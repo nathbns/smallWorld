@@ -25,10 +25,10 @@ public class Jeu extends Thread{
         joueurs = new Joueur[4];
 
         // Initialisation des joueurs
-        joueurs[0] = new Joueur(this,TypePeuple.ELFE,"Rouge");
-        joueurs[1] = new Joueur(this,TypePeuple.ELFE,"Bleu");
-        joueurs[2] = null;
-        joueurs[3] = null;
+        joueurs[0] = new Joueur(this,randomPeuple(),"Rouge"); // Couleur arbitraire pour l'instant
+        joueurs[1] = new Joueur(this,randomPeuple(),"Bleu");
+        joueurs[2] = new Joueur(this,randomPeuple(),"Jaune");
+        joueurs[3] = new Joueur(this,randomPeuple(),"Vert");
         j1 = joueurs[0];
 
         // Initialisation du plateau

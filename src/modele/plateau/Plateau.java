@@ -52,9 +52,8 @@ public class Plateau extends Observable {
 
     public void initialiser() {
 
-
-        Elfe c = new Elfe(this);
-        c.allerSurCase(grilleCases[4][7]);
+//        c.allerSurCase(grilleCases[4][7]); // Unite pour exemple
+//        Elfe c = new Elfe(this);
 
         setChanged();
         notifyObservers();

@@ -6,7 +6,7 @@ import java.awt.*;
 public class ImagePanel extends JPanel {
     private Image imgBackground;
     private Image imgFront;
-    private int nb = 3;
+    private int nb = 0;
     private JTextArea nbUnites = new JTextArea(String.valueOf(nb));
 
     public void setBackground(Image _imgBackground) {
@@ -32,11 +32,14 @@ public class ImagePanel extends JPanel {
         if (imgFront != null) {
             g.drawImage(imgFront, 10, 10, (int) (getWidth()*0.5), (int) (getHeight()*0.5), this);
         }
-        nbUnites.setLocation(getWidth()-25,getHeight()-25);
-        //nbUnites.setPreferredSize(new Dimension(20,20));
-        //nbUnites.setSize(new Dimension(30,30));
-        nbUnites.setOpaque(false);
-        add(nbUnites);
+
+        if(nb > 1){
+            nbUnites.setLocation(getWidth()-25,getHeight()-25);
+            //nbUnites.setPreferredSize(new Dimension(20,20));
+            //nbUnites.setSize(new Dimension(30,30));
+            nbUnites.setOpaque(false);
+            add(nbUnites);
+        }
 
     }
 }

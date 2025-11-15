@@ -146,9 +146,7 @@ public class VueControleur extends JFrame implements Observer {
 
                 Case c = plateau.getCases()[x][y];
 
-
                 //tabIP[x][y].setNbUnites(c.getUnites().); //get NB
-
 
                 if (c != null) {
 

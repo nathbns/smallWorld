@@ -1,5 +1,6 @@
 package modele.jeu;
 
+import modele.jeu.peuple.Elfe;
 import modele.jeu.peuple.Nain;
 import modele.jeu.peuple.TypePeuple;
 import modele.jeu.peuple.Unites;

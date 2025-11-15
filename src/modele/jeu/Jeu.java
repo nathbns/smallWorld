@@ -1,9 +1,9 @@
 package modele.jeu;
 
-import modele.jeu.peuple.Nain;
-import modele.jeu.peuple.TypePeuple;
+import modele.jeu.peuple.*;
 import modele.plateau.Plateau;
 
+import java.awt.geom.Ellipse2D;
 import java.util.Random;
 
 public class Jeu extends Thread{
@@ -25,8 +25,8 @@ public class Jeu extends Thread{
         joueurs = new Joueur[4];
 
         // Initialisation des joueurs
-        joueurs[0] = new Joueur(this,randomPeuple(),"Rouge");
-        joueurs[1] = new Joueur(this,randomPeuple(),"Bleu");
+        joueurs[0] = new Joueur(this,TypePeuple.ELFE,"Rouge");
+        joueurs[1] = new Joueur(this,TypePeuple.ELFE,"Bleu");
         joueurs[2] = null;
         joueurs[3] = null;
         j1 = joueurs[0];
@@ -35,11 +35,47 @@ public class Jeu extends Thread{
         plateau = new Plateau();
         plateau.initialiser();
 
+        // Initialisation des unites des joueurs
+        initUnitesJoueurs(joueurs);
+
         // Initailisation des unites sur le plateau
         plateau.addJoueur(joueurs);
 
 
         start();
+
+    }
+
+    // Faire mieux apres mais au moins ça existe
+    protected void initUnitesJoueurs(Joueur [] j){
+
+        for(int i = 0; i < j.length; i++){
+            if(j[i] == null){
+                continue;
+            }
+            switch (j[i].getPeuple()){
+                case ELFE:
+                    for(int unites = 0; unites < 5; unites++){ // Nombre d'unites arbitraire pour le moment
+                        j[i].ajouterUnite(new Elfe(plateau));
+                    }
+                    break;
+                case GOBELIN:
+                    for(int unites = 0; unites < 5; unites++){
+                        j[i].ajouterUnite(new Gobelin(plateau));
+                    }
+                    break;
+                case HUMAIN:
+                    for(int unites = 0; unites < 5; unites++){
+                        j[i].ajouterUnite(new Humain(plateau));
+                    }
+                    break;
+                case NAIN:
+                    for(int unites = 0; unites < 5; unites++){
+                        j[i].ajouterUnite(new Nain(plateau));
+                    }
+                    break;
+            }
+        }
 
     }
 

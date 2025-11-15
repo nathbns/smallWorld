@@ -33,7 +33,8 @@ public class ImagePanel extends JPanel {
             g.drawImage(imgFront, 10, 10, (int) (getWidth()*0.5), (int) (getHeight()*0.5), this);
         }
         nbUnites.setLocation(getWidth()-25,getHeight()-25);
-        nbUnites.setSize(25,25);
+        //nbUnites.setPreferredSize(new Dimension(20,20));
+        //nbUnites.setSize(new Dimension(30,30));
         nbUnites.setOpaque(false);
         add(nbUnites);
 

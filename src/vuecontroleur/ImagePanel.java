@@ -23,7 +23,7 @@ public class ImagePanel extends JPanel {
         super.paintComponent(g);
         // cadre
         g.drawRoundRect(1, 1, getWidth()-2, getHeight()-2, 1, 1);
-
+                
         if (imgBackground != null) {
 
             g.drawImage(imgBackground, 2, 2, getWidth()-4, getHeight()-4, this);
@@ -32,8 +32,9 @@ public class ImagePanel extends JPanel {
         if (imgFront != null) {
             g.drawImage(imgFront, 10, 10, (int) (getWidth()*0.5), (int) (getHeight()*0.5), this);
         }
-
-        nbUnites.setLocation(50,50);
+        nbUnites.setLocation(getWidth()-25,getHeight()-25);
+        nbUnites.setSize(25,25);
+        nbUnites.setOpaque(false);
         add(nbUnites);
 
     }

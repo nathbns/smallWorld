@@ -3,7 +3,7 @@ package vuecontroleur;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import javax.swing.*;
@@ -12,6 +12,7 @@ import javax.swing.*;
 import modele.jeu.peuple.*;
 import modele.jeu.Coup;
 import modele.jeu.Jeu;
+import modele.jeu.ResultatCombat;
 import modele.plateau.Case;
 import modele.plateau.Plateau;
 
@@ -40,6 +41,13 @@ public class VueControleur extends JFrame implements Observer {
     private JComponent grilleIP;
     private Case caseClic1; // mémorisation des cases cliquées
     private Case caseClic2;
+    
+    private List<Case> casesAccessibles;
+    private List<Case> casesAttaquables;
+    
+    private JLabel labelJoueurCourant;
+    private JLabel labelTour;
+    private JButton btnPasserTour;
 
 
     private ImagePanel[][] tabIP; // cases graphique (au moment du rafraichissement, chaque case va être associée à une icône background et front, suivant ce qui est présent dans le modèle)
@@ -71,7 +79,7 @@ public class VueControleur extends JFrame implements Observer {
         icoGobelin = new ImageIcon("./data/units/unit_green.png").getImage();
         icoDesert = new ImageIcon("./data/terrain/desert.png").getImage();
         icoForet = new ImageIcon("./data/terrain/forest.png").getImage();
-        icoMontagne = new ImageIcon("./data/terrain/mountain.png").getImage();
+        icoMontagne = new ImageIcon("./data/terrain/moutain.png").getImage();
         icoPlaine = new ImageIcon("./data/terrain/plain.png").getImage();
 
 
@@ -82,7 +90,30 @@ public class VueControleur extends JFrame implements Observer {
     private void placerLesComposantsGraphiques() {
         setTitle("Smallworld");
         setResizable(true);
-        setSize(sizeX * pxCase, sizeX * pxCase);
+        setLayout(new BorderLayout());
+        
+        // Panel du haut pour les informations
+        JPanel panelInfo = new JPanel(new FlowLayout());
+        labelJoueurCourant = new JLabel("Joueur: " + jeu.getJoueurCourant().getCouleur());
+        labelTour = new JLabel("Tour: " + jeu.getTourActuel() + "/" + jeu.getNbToursMax());
+        btnPasserTour = new JButton("Passer le tour");
+        
+        btnPasserTour.addActionListener(e -> {
+            jeu.passerAuJoueurSuivant();
+            caseClic1 = null;
+            caseClic2 = null;
+            casesAccessibles = null;
+            casesAttaquables = null;
+            mettreAJourAffichage();
+        });
+        
+        panelInfo.add(labelJoueurCourant);
+        panelInfo.add(labelTour);
+        panelInfo.add(btnPasserTour);
+        
+        add(panelInfo, BorderLayout.NORTH);
+        
+        setSize(sizeX * pxCase, sizeY * pxCase + 100);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // permet de terminer l'application à la fermeture de la fenêtre
 
         grilleIP = new JPanel(new GridLayout(sizeY, sizeX)); // grilleJLabels va contenir les cases graphiques et les positionner sous la forme d'une grille
@@ -102,14 +133,69 @@ public class VueControleur extends JFrame implements Observer {
                 iP.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseClicked(MouseEvent e) {
-
+                        // Logique de jeu
                         if (caseClic1 == null) {
+                            // Premier clic : sélectionner une unité
                             caseClic1 = plateau.getCases()[xx][yy];
+                            
+                            Unites unite = caseClic1.getUnites();
+                            if (unite != null && unite.getProprietaire() == jeu.getJoueurCourant()) {
+                                // Afficher les cases accessibles et attaquables
+                                if (!unite.aDeplaceOuAttaque()) {
+                                    casesAccessibles = plateau.getCasesAccessibles(caseClic1, jeu.getJoueurCourant());
+                                } else {
+                                    casesAccessibles = null;
+                                }
+                                
+                                if (!unite.aJoueCeTour()) {
+                                    casesAttaquables = plateau.getCasesAttaquables(caseClic1, jeu.getJoueurCourant());
+                                } else {
+                                    casesAttaquables = null;
+                                }
+                                
+                                mettreAJourAffichage();
+                            } else {
+                                // Pas d'unité ou unité adverse : réinitialiser
+                                caseClic1 = null;
+                            }
                         } else {
+                            // Deuxième clic : déplacer ou attaquer
                             caseClic2 = plateau.getCases()[xx][yy];
-                            jeu.envoyerCoup(new Coup(caseClic1, caseClic2));
+                            
+                            // Vérifier si on clique sur la même case (désélection)
+                            if (caseClic1 == caseClic2) {
+                                caseClic1 = null;
+                                caseClic2 = null;
+                                casesAccessibles = null;
+                                casesAttaquables = null;
+                                mettreAJourAffichage();
+                                return;
+                            }
+                            
+                            // Vérifier si le clic est valide (déplacement ou attaque)
+                            boolean coupValide = false;
+                            if (casesAccessibles != null && casesAccessibles.contains(caseClic2)) {
+                                coupValide = true;
+                            } else if (casesAttaquables != null && casesAttaquables.contains(caseClic2)) {
+                                coupValide = true;
+                            }
+                            
+                            if (coupValide) {
+                                Coup coup = new Coup(caseClic1, caseClic2);
+                                jeu.envoyerCoup(coup);
+                                
+                                // Attendre un peu pour voir le résultat avant d'afficher le dialogue
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException ex) {}
+                            }
+                            
+                            // Réinitialiser la sélection
                             caseClic1 = null;
                             caseClic2 = null;
+                            casesAccessibles = null;
+                            casesAttaquables = null;
+                            mettreAJourAffichage();
                         }
 
                     }
@@ -120,7 +206,7 @@ public class VueControleur extends JFrame implements Observer {
                 grilleIP.add(iP);
             }
         }
-        add(grilleIP);
+        add(grilleIP, BorderLayout.CENTER);
     }
 
     
@@ -129,6 +215,28 @@ public class VueControleur extends JFrame implements Observer {
      */
     private void mettreAJourAffichage() {
 
+        // Mettre à jour les labels avec couleur du joueur
+        labelJoueurCourant.setText("Tour de : " + jeu.getJoueurCourant().getCouleur() + " (" + jeu.getJoueurCourant().getPeuple().getNom() + ") - Points: " + jeu.getJoueurCourant().getScore());
+        labelJoueurCourant.setFont(new Font("Arial", Font.BOLD, 16));
+        
+        // Colorer le texte selon le joueur
+        switch(jeu.getJoueurCourant().getCouleur()) {
+            case "Rouge":
+                labelJoueurCourant.setForeground(new Color(200, 0, 0));
+                break;
+            case "Bleu":
+                labelJoueurCourant.setForeground(new Color(0, 0, 200));
+                break;
+            case "Jaune":
+                labelJoueurCourant.setForeground(new Color(200, 150, 0));
+                break;
+            case "Vert":
+                labelJoueurCourant.setForeground(new Color(0, 150, 0));
+                break;
+        }
+        
+        labelTour.setText("Tour: " + jeu.getTourActuel() + "/" + jeu.getNbToursMax());
+        labelTour.setFont(new Font("Arial", Font.BOLD, 14));
 
         for (int x = 0; x < sizeX; x++) {
             for (int y = 0; y < sizeY; y++) {
@@ -148,6 +256,9 @@ public class VueControleur extends JFrame implements Observer {
                 }
 
                 tabIP[x][y].setFront(null);
+                
+                // Réinitialiser la bordure
+                tabIP[x][y].setBorderColor(null);
 
                 Case c = plateau.getCases()[x][y];
 
@@ -171,6 +282,19 @@ public class VueControleur extends JFrame implements Observer {
                         tabIP[x][y].setFront(icoGobelin);
                     }
                 }
+                
+                // Afficher les cases sélectionnées et disponibles
+                if (caseClic1 != null && c == caseClic1) {
+                    tabIP[x][y].setBorderColor(Color.YELLOW); // Case sélectionnée
+                }
+                
+                if (casesAccessibles != null && casesAccessibles.contains(c)) {
+                    tabIP[x][y].setBorderColor(Color.GREEN); // Cases accessibles pour déplacement
+                }
+                
+                if (casesAttaquables != null && casesAttaquables.contains(c)) {
+                    tabIP[x][y].setBorderColor(Color.RED); // Cases attaquables
+                }
 
             }
         }
@@ -186,8 +310,40 @@ public class VueControleur extends JFrame implements Observer {
                     @Override
                     public void run() {
                         mettreAJourAffichage();
+                        
+                        // Vérifier s'il y a un résultat de combat à afficher dans le terminal
+                        ResultatCombat resultat = jeu.getDernierResultatCombat();
+                        if (resultat != null) {
+                            afficherResultatCombatTerminal(resultat);
+                        }
                     }
                 }); 
 
+    }
+
+    private void afficherResultatCombatTerminal(ResultatCombat resultat) {
+        String attaquantNom = resultat.attaquant.getTypePeuple().getNom();
+        String attaquantJoueur = resultat.attaquant.getProprietaire().getCouleur();
+        String defenseurNom = resultat.defenseur.getTypePeuple().getNom();
+        String defenseurJoueur = resultat.defenseur.getProprietaire().getCouleur();
+        
+        String gagnant = resultat.attaquantGagne ? attaquantJoueur : defenseurJoueur;
+        
+        System.out.println("\n═══════════════════════════════════");
+        System.out.println("      RÉSULTAT DU COMBAT");
+        System.out.println("═══════════════════════════════════");
+        System.out.println("⚔️  ATTAQUANT: " + attaquantNom + " (" + attaquantJoueur + ")");
+        System.out.println("    Force d'attaque: " + resultat.forceAttaquant);
+        System.out.println();
+        System.out.println("🛡️  DÉFENSEUR: " + defenseurNom + " (" + defenseurJoueur + ")");
+        System.out.println("    Force de défense: " + resultat.forceDefenseur + resultat.descriptionTerrain);
+        System.out.println();
+        System.out.println("───────────────────────────────────");
+        if (resultat.attaquantGagne) {
+            System.out.println("🎉 VICTOIRE ! " + gagnant + " remporte le combat !");
+        } else {
+            System.out.println("💀 DÉFAITE... " + gagnant + " remporte le combat !");
+        }
+        System.out.println("═══════════════════════════════════\n");
     }
 }

@@ -8,6 +8,7 @@ public class ImagePanel extends JPanel {
     private Image imgFront;
     private int nb = 0;
     private JTextArea nbUnites = new JTextArea(String.valueOf(nb));
+    private Color borderColor = null;
 
     public void setBackground(Image _imgBackground) {
         imgBackground = _imgBackground;
@@ -18,11 +19,26 @@ public class ImagePanel extends JPanel {
     }
 
     public void setNbUnites(int i){nb = i;}
+    
+    public void setBorderColor(Color color) {
+        borderColor = color;
+    }
+    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // cadre
-        g.drawRoundRect(1, 1, getWidth()-2, getHeight()-2, 1, 1);
+        
+        // cadre normal
+        if (borderColor == null) {
+            g.setColor(Color.BLACK);
+            g.drawRoundRect(1, 1, getWidth()-2, getHeight()-2, 1, 1);
+        } else {
+            // cadre coloré pour indiquer la sélection/disponibilité
+            g.setColor(borderColor);
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setStroke(new BasicStroke(4));
+            g2d.drawRoundRect(2, 2, getWidth()-4, getHeight()-4, 1, 1);
+        }
                 
         if (imgBackground != null) {
 

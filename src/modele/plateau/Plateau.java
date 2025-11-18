@@ -9,7 +9,9 @@ import modele.jeu.Joueur;
 import modele.jeu.peuple.*;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Observable;
 import java.util.Random;
 
@@ -93,21 +95,25 @@ public class Plateau extends Observable {
                 switch (j[jo].getPeuple()){
                     case HUMAIN:
                         Humain h = new Humain(this);
+                        h.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         h.allerSurCase(grilleCases[pos[0]][pos[1]]);
                         break;
                     case GOBELIN:
                         Gobelin g = new Gobelin(this);
+                        g.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         g.allerSurCase(grilleCases[pos[0]][pos[1]]);
                         break;
                     case NAIN:
                         Nain n = new Nain(this);
+                        n.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         n.allerSurCase(grilleCases[pos[0]][pos[1]]);
                         break;
                     case ELFE:
                         Elfe e = new Elfe(this);
+                        e.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         e.allerSurCase(grilleCases[pos[0]][pos[1]]);
                         break;
@@ -151,6 +157,162 @@ public class Plateau extends Observable {
 
     }
 
+    /**
+     * Calcule les cases accessibles pour un déplacement depuis une case donnée
+     */
+    public List<Case> getCasesAccessibles(Case caseDepart, Joueur joueur) {
+        List<Case> casesAccessibles = new ArrayList<>();
+        
+        if (caseDepart == null || caseDepart.getUnites() == null) {
+            return casesAccessibles;
+        }
+        
+        Unites unite = caseDepart.getUnites();
+        
+        // Vérifier que l'unité appartient au joueur
+        if (unite.getProprietaire() != joueur) {
+            return casesAccessibles;
+        }
+        
+        // Si l'unité a déjà déplacé ou attaqué, elle ne peut plus bouger
+        if (unite.aDeplaceOuAttaque()) {
+            return casesAccessibles;
+        }
+        
+        Point posDepart = map.get(caseDepart);
+        int portee = unite.getPorteeDeplacement();
+        
+        // Parcourir toutes les cases dans la portée de déplacement
+        for (int dx = -portee; dx <= portee; dx++) {
+            for (int dy = -portee; dy <= portee; dy++) {
+                if (dx == 0 && dy == 0) continue; // Pas la case de départ
+                
+                int newX = posDepart.x + dx;
+                int newY = posDepart.y + dy;
+                
+                if (contenuDansGrille(new Point(newX, newY))) {
+                    Case c = grilleCases[newX][newY];
+                    
+                    // Une case est accessible si elle est vide ou contient une unité ennemie
+                    if (c.getUnites() == null || c.getUnites().getProprietaire() != joueur) {
+                        casesAccessibles.add(c);
+                    }
+                }
+            }
+        }
+        
+        return casesAccessibles;
+    }
+
+    /**
+     * Calcule les cases attaquables depuis une case donnée
+     */
+    public List<Case> getCasesAttaquables(Case caseDepart, Joueur joueur) {
+        List<Case> casesAttaquables = new ArrayList<>();
+        
+        if (caseDepart == null || caseDepart.getUnites() == null) {
+            return casesAttaquables;
+        }
+        
+        Unites unite = caseDepart.getUnites();
+        
+        // Vérifier que l'unité appartient au joueur
+        if (unite.getProprietaire() != joueur) {
+            return casesAttaquables;
+        }
+        
+        // Si l'unité a déjà joué ce tour, elle ne peut plus attaquer
+        if (unite.aJoueCeTour()) {
+            return casesAttaquables;
+        }
+        
+        Point posDepart = map.get(caseDepart);
+        int portee = unite.getPorteeAttaque();
+        
+        // Parcourir toutes les cases dans la portée d'attaque
+        for (int dx = -portee; dx <= portee; dx++) {
+            for (int dy = -portee; dy <= portee; dy++) {
+                if (dx == 0 && dy == 0) continue; // Pas la case de départ
+                
+                int newX = posDepart.x + dx;
+                int newY = posDepart.y + dy;
+                
+                if (contenuDansGrille(new Point(newX, newY))) {
+                    Case c = grilleCases[newX][newY];
+                    
+                    // Une case est attaquable si elle contient une unité ennemie
+                    if (c.getUnites() != null && c.getUnites().getProprietaire() != joueur) {
+                        casesAttaquables.add(c);
+                    }
+                }
+            }
+        }
+        
+        return casesAttaquables;
+    }
+
+    /**
+     * Effectue une attaque entre deux cases
+     * @return ResultatCombat avec les détails du combat
+     */
+    public modele.jeu.ResultatCombat attaquer(Case caseAttaquant, Case caseDefenseur) {
+        if (caseAttaquant == null || caseDefenseur == null) {
+            return null;
+        }
+        
+        Unites attaquant = caseAttaquant.getUnites();
+        Unites defenseur = caseDefenseur.getUnites();
+        
+        if (attaquant == null || defenseur == null) {
+            return null;
+        }
+        
+        // Calcul aléatoire du combat
+        Random rand = new Random();
+        int diceAtt = rand.nextInt(6); // +0 à +5
+        int diceDef = rand.nextInt(6); // +0 à +5
+        int forceAtt = attaquant.getForceAttaque() + diceAtt;
+        int forceDef = defenseur.getForceDefense() + diceDef;
+        
+        // Bonus de terrain pour le défenseur
+        String descriptionTerrain = "";
+        Biome biomeDefenseur = caseDefenseur.getBiome();
+        if (biomeDefenseur == Biome.MONTAGNE && defenseur.getTypePeuple() == TypePeuple.NAIN) {
+            forceDef += 2;
+            descriptionTerrain = " (Bonus Montagne +2)";
+        } else if (biomeDefenseur == Biome.FORET && defenseur.getTypePeuple() == TypePeuple.ELFE) {
+            forceDef += 2;
+            descriptionTerrain = " (Bonus Forêt +2)";
+        }
+        
+        // L'attaquant gagne si sa force est supérieure
+        boolean attaquantGagne = forceAtt > forceDef;
+        
+        // Créer le résultat avant de modifier le plateau
+        modele.jeu.ResultatCombat resultat = new modele.jeu.ResultatCombat(
+            attaquant, defenseur, forceAtt, forceDef, attaquantGagne, descriptionTerrain
+        );
+        
+        if (attaquantGagne) {
+            // Le défenseur est éliminé
+            Joueur joueurDefenseur = defenseur.getProprietaire();
+            defenseur.quitterCase(); // L'unité défenseur quitte sa case
+            if (joueurDefenseur != null) {
+                joueurDefenseur.retirerUnite(defenseur); // Retirer de la liste du joueur
+            }
+            // L'attaquant prend sa place
+            attaquant.allerSurCase(caseDefenseur);
+        }
+        
+        // Marquer l'unité comme ayant joué
+        attaquant.marquerCommeJouee();
+        
+        setChanged();
+        notifyObservers();
+        
+        return resultat;
+    }
+
 
     /** Indique si p est contenu dans la grille
      */
@@ -165,6 +327,10 @@ public class Plateau extends Observable {
             retour = grilleCases[p.x][p.y];
         }
         return retour;
+    }
+
+    public Point getPosition(Case c) {
+        return map.get(c);
     }
 
 

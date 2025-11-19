@@ -7,7 +7,7 @@ public class ImagePanel extends JPanel {
     private Image imgBackground;
     private Image imgFront;
     private int nb = 0;
-    private JTextArea nbUnites = new JTextArea(String.valueOf(nb));
+    private JLabel nbUnites = new JLabel(String.valueOf(nb));
     private Color borderColor = null;
     private Color fillColor = null;
 
@@ -59,11 +59,12 @@ public class ImagePanel extends JPanel {
                 }
 
         if(nb > 1){
-            nbUnites.setLocation(getWidth()-25,getHeight()-25);
-            //nbUnites.setPreferredSize(new Dimension(20,20));
-            //nbUnites.setSize(new Dimension(30,30));
-            nbUnites.setOpaque(false);
+            nbUnites.setText(String.valueOf(nb));
+            nbUnites.setLocation(getWidth()-35,getHeight()-35);
+            nbUnites.setFont(new Font("Arial",Font.BOLD,22));
             add(nbUnites);
+        }else{
+            remove(nbUnites);
         }
 
     }

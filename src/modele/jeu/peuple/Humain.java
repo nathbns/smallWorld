@@ -3,8 +3,8 @@ package modele.jeu.peuple;
 import modele.plateau.Plateau;
 
 public class Humain extends Unites {
-    public Humain(Plateau _plateau) {
-        super(_plateau);
+    public Humain(Plateau _plateau, int _nbUnit) {
+        super(_plateau, _nbUnit);
     }
 
     @Override

@@ -3,8 +3,8 @@ package modele.jeu.peuple;
 import modele.plateau.Plateau;
 
 public class Elfe extends Unites {
-    public Elfe(Plateau _plateau) {
-        super(_plateau);
+    public Elfe(Plateau _plateau, int _nbUnit) {
+        super(_plateau, _nbUnit);
     }
 
     @Override

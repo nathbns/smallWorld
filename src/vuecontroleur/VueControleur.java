@@ -60,7 +60,6 @@ public class VueControleur extends JFrame implements Observer {
         sizeY = plateau.SIZE_Y;
 
         chargerLesIcones();
-        
         placerLesComposantsGraphiques();
 
         plateau.addObserver(this);
@@ -82,6 +81,7 @@ public class VueControleur extends JFrame implements Observer {
         icoForet = new ImageIcon("./data/terrain/forest.png").getImage();
         icoMontagne = new ImageIcon("./data/terrain/moutain.png").getImage();
         icoPlaine = new ImageIcon("./data/terrain/plain.png").getImage();
+
 
     }
 
@@ -259,9 +259,14 @@ public class VueControleur extends JFrame implements Observer {
                 
                 // Réinitialiser la bordure
                 tabIP[x][y].setBorderColor(null);
-                tabIP[x][y].setFillColor(null);
 
                 Case c = plateau.getCases()[x][y];
+
+                if(c.getUnites() != null){
+                    tabIP[x][y].setNbUnites(c.getUnites().getNbUnit()); //get NB
+                }else{
+                    tabIP[x][y].setNbUnites(0);
+                }
 
                 if (c != null) {
 
@@ -281,18 +286,18 @@ public class VueControleur extends JFrame implements Observer {
                         tabIP[x][y].setFront(icoGobelin);
                     }
                 }
-                
+
                 // Afficher les cases sélectionnées et disponibles
                 if (caseClic1 != null && c == caseClic1) {
                     tabIP[x][y].setBorderColor(Color.YELLOW); // Case sélectionnée
                     tabIP[x][y].setFillColor(new Color(255, 255, 0, 70));
                 }
-                
+
                 if (casesAccessibles != null && casesAccessibles.contains(c)) {
                     tabIP[x][y].setBorderColor(Color.GREEN); // Cases accessibles pour déplacement
                     tabIP[x][y].setFillColor(new Color(0, 255, 0, 70));
                 }
-                
+
                 if (casesAttaquables != null && casesAttaquables.contains(c)) {
                     tabIP[x][y].setBorderColor(Color.RED); // Cases attaquables
                     tabIP[x][y].setFillColor(new Color(255, 0, 0, 70));
@@ -331,17 +336,21 @@ public class VueControleur extends JFrame implements Observer {
         
         String gagnant = resultat.attaquantGagne ? attaquantJoueur : defenseurJoueur;
         
-        System.out.println("\nRÉSULTAT DU COMBAT");
-        System.out.println("ATTAQUANT: " + attaquantNom + " (" + attaquantJoueur + ")");
+        System.out.println("\n═══════════════════════════════════");
+        System.out.println("      RÉSULTAT DU COMBAT");
+        System.out.println("═══════════════════════════════════");
+        System.out.println("⚔️  ATTAQUANT: " + attaquantNom + " (" + attaquantJoueur + ")");
         System.out.println("    Force d'attaque: " + resultat.forceAttaquant);
         System.out.println();
-        System.out.println("DÉFENSEUR: " + defenseurNom + " (" + defenseurJoueur + ")");
+        System.out.println("🛡️  DÉFENSEUR: " + defenseurNom + " (" + defenseurJoueur + ")");
         System.out.println("    Force de défense: " + resultat.forceDefenseur + resultat.descriptionTerrain);
         System.out.println();
+        System.out.println("───────────────────────────────────");
         if (resultat.attaquantGagne) {
-            System.out.println("VICTOIRE ! " + gagnant + " remporte le combat !");
+            System.out.println("🎉 VICTOIRE ! " + gagnant + " remporte le combat !");
         } else {
-            System.out.println("DÉFAITE ! " + gagnant + " remporte le combat !");
+            System.out.println("💀 DÉFAITE... " + gagnant + " remporte le combat !");
         }
+        System.out.println("═══════════════════════════════════\n");
     }
 }

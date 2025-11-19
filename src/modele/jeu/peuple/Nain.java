@@ -3,8 +3,8 @@ package modele.jeu.peuple;
 import modele.plateau.Plateau;
 
 public class Nain extends Unites {
-    public Nain(Plateau _plateau) {
-        super(_plateau);
+    public Nain(Plateau _plateau, int _nbUnit) {
+        super(_plateau, _nbUnit);
     }
 
     @Override

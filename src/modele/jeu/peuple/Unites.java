@@ -14,10 +14,13 @@ public abstract class Unites {
     protected boolean aJoueCeTour; // Pour savoir si l'unité a déjà joué ce tour
     protected boolean aDeplaceOuAttaque; // Pour savoir si l'unité peut encore attaquer après un déplacement
 
-    public Unites(Plateau _plateau) {
+    protected int nbUnit;
+
+    public Unites(Plateau _plateau, int _nbUnit) {
         plateau = _plateau;
         aJoueCeTour = false;
         aDeplaceOuAttaque = false;
+        nbUnit = _nbUnit;
     }
 
     public void quitterCase() {
@@ -63,6 +66,10 @@ public abstract class Unites {
 
     public void marquerDeplaceOuAttaque() {
         aDeplaceOuAttaque = true;
+    }
+
+    public int getNbUnit(){
+        return nbUnit;
     }
 
     // Méthodes abstraites pour les capacités spéciales de chaque peuple

@@ -57,6 +57,10 @@ public class Joueur {
         return unites;
     }
 
+    public Unites getUnite(int i) {
+        return unites.get(i);
+    }
+
     public void ajouterUnite(Unites unite) {
         unites.add(unite);
     }

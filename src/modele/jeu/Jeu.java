@@ -61,6 +61,8 @@ public class Jeu extends Thread{
     // Faire mieux après mais au moins ça existe
     protected void initUnitesJoueurs(Joueur [] j){
 
+        Random rand = new Random();
+
         for(int i = 0; i < j.length; i++){
             if(j[i] == null){
                 continue;
@@ -68,22 +70,22 @@ public class Jeu extends Thread{
             switch (j[i].getPeuple()){
                 case ELFE:
                     for(int unites = 0; unites < 5; unites++){ // Nombre d'unites arbitraire pour le moment
-                        j[i].ajouterUnite(new Elfe(plateau));
+                        j[i].ajouterUnite(new Elfe(plateau,rand.nextInt(3)+1));
                     }
                     break;
                 case GOBELIN:
                     for(int unites = 0; unites < 5; unites++){
-                        j[i].ajouterUnite(new Gobelin(plateau));
+                        j[i].ajouterUnite(new Gobelin(plateau,rand.nextInt(3)+1));
                     }
                     break;
                 case HUMAIN:
                     for(int unites = 0; unites < 5; unites++){
-                        j[i].ajouterUnite(new Humain(plateau));
+                        j[i].ajouterUnite(new Humain(plateau,rand.nextInt(3)+1));
                     }
                     break;
                 case NAIN:
                     for(int unites = 0; unites < 5; unites++){
-                        j[i].ajouterUnite(new Nain(plateau));
+                        j[i].ajouterUnite(new Nain(plateau,rand.nextInt(3)+1));
                     }
                     break;
             }

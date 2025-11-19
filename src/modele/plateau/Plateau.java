@@ -94,25 +94,25 @@ public class Plateau extends Observable {
                 int [] pos;
                 switch (j[jo].getPeuple()){
                     case HUMAIN:
-                        Humain h = new Humain(this);
+                        Humain h = (Humain) j[jo].getUnite(i);
                         h.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         h.allerSurCase(grilleCases[pos[0]][pos[1]]);
                         break;
                     case GOBELIN:
-                        Gobelin g = new Gobelin(this);
+                        Gobelin g = (Gobelin) j[jo].getUnite(i);
                         g.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         g.allerSurCase(grilleCases[pos[0]][pos[1]]);
                         break;
                     case NAIN:
-                        Nain n = new Nain(this);
+                        Nain n = (Nain) j[jo].getUnite(i);
                         n.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         n.allerSurCase(grilleCases[pos[0]][pos[1]]);
                         break;
                     case ELFE:
-                        Elfe e = new Elfe(this);
+                        Elfe e = (Elfe) j[jo].getUnite(i);
                         e.setProprietaire(j[jo]);
                         pos = findEmptyCaseAround(x,y);
                         e.allerSurCase(grilleCases[pos[0]][pos[1]]);

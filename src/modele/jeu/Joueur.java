@@ -49,6 +49,10 @@ public class Joueur {
         score += points;
     }
 
+    public int getNbUnites() {
+        return unites.size();
+    }
+
     public List<Unites> getUnites() {
         return unites;
     }

@@ -49,6 +49,8 @@ public class VueControleur extends JFrame implements Observer {
     private JLabel labelTour;
     private JButton btnPasserTour;
 
+    private CombatPreview combatPreview;
+
 
     private ImagePanel[][] tabIP; // cases graphique (au moment du rafraichissement, chaque case va être associée à une icône background et front, suivant ce qui est présent dans le modèle)
 
@@ -99,6 +101,9 @@ public class VueControleur extends JFrame implements Observer {
         btnPasserTour = new JButton("Passer le tour");
         
         btnPasserTour.addActionListener(e -> {
+            if(jeu.hasEnded()){
+                return;
+            }
             jeu.passerAuJoueurSuivant();
             caseClic1 = null;
             caseClic2 = null;
@@ -112,8 +117,12 @@ public class VueControleur extends JFrame implements Observer {
         panelInfo.add(btnPasserTour);
         
         add(panelInfo, BorderLayout.NORTH);
+
+        combatPreview = new CombatPreview(); // Element qui permet de determiles les probas avant le combat
+
+        add(combatPreview.panel, BorderLayout.SOUTH);
         
-        setSize(sizeX * pxCase, sizeY * pxCase + 100);
+        setSize(sizeX * pxCase, sizeY * pxCase + 120);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // permet de terminer l'application à la fermeture de la fenêtre
 
         grilleIP = new JPanel(new GridLayout(sizeY, sizeX)); // grilleJLabels va contenir les cases graphiques et les positionner sous la forme d'une grille
@@ -133,6 +142,11 @@ public class VueControleur extends JFrame implements Observer {
                 iP.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseClicked(MouseEvent e) {
+                        // Aucune action si le jeu est terminé
+                        if(jeu.hasEnded()){
+                            return;
+                        }
+
                         // Logique de jeu
                         if (caseClic1 == null) {
                             // Premier clic : sélectionner une unité
@@ -143,12 +157,14 @@ public class VueControleur extends JFrame implements Observer {
                                 // Afficher les cases accessibles et attaquables
                                 if (!unite.aDeplaceOuAttaque()) {
                                     casesAccessibles = plateau.getCasesAccessibles(caseClic1, jeu.getJoueurCourant());
+                                    combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
                                 } else {
                                     casesAccessibles = null;
                                 }
                                 
                                 if (!unite.aJoueCeTour()) {
                                     casesAttaquables = plateau.getCasesAttaquables(caseClic1, jeu.getJoueurCourant());
+                                    combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
                                 } else {
                                     casesAttaquables = null;
                                 }
@@ -157,6 +173,7 @@ public class VueControleur extends JFrame implements Observer {
                             } else {
                                 // Pas d'unité ou unité adverse : réinitialiser
                                 caseClic1 = null;
+                                combatPreview.attaqueUnite = 0;
                             }
                         } else {
                             // Deuxième clic : déplacer ou attaquer
@@ -168,6 +185,7 @@ public class VueControleur extends JFrame implements Observer {
                                 caseClic2 = null;
                                 casesAccessibles = null;
                                 casesAttaquables = null;
+                                combatPreview.attaqueUnite = 0;
                                 mettreAJourAffichage();
                                 return;
                             }
@@ -176,13 +194,16 @@ public class VueControleur extends JFrame implements Observer {
                             boolean coupValide = false;
                             if (casesAccessibles != null && casesAccessibles.contains(caseClic2)) {
                                 coupValide = true;
+                                combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
                             } else if (casesAttaquables != null && casesAttaquables.contains(caseClic2)) {
                                 coupValide = true;
+                                combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
                             }
                             
                             if (coupValide) {
                                 Coup coup = new Coup(caseClic1, caseClic2);
                                 jeu.envoyerCoup(coup);
+                                combatPreview.attaqueUnite = 0;
                                 
                                 // Attendre un peu pour voir le résultat avant d'afficher le dialogue
                                 try {
@@ -199,6 +220,27 @@ public class VueControleur extends JFrame implements Observer {
                         }
 
                     }
+                });
+
+                iP.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        Case caseSurvolee = plateau.getCases()[xx][yy];
+                        if(caseClic1 != null && caseSurvolee.getUnites() != null && caseSurvolee.getUnites().getProprietaire() != caseClic1.getUnites().getProprietaire()){
+                                combatPreview.defenseUnite = caseSurvolee.getUnites().calculDefenseTotale();
+                                System.out.println(combatPreview.attaqueUnite + " contre " + combatPreview.defenseUnite);
+                                combatPreview.calculatePercents(caseClic1,caseSurvolee);
+                                mettreAJourAffichage();
+                        }
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        combatPreview.defenseUnite = 0;
+                        mettreAJourAffichage();
+                    }
+
+
                 });
 
 
@@ -237,6 +279,13 @@ public class VueControleur extends JFrame implements Observer {
         
         labelTour.setText("Tour: " + jeu.getTourActuel() + "/" + jeu.getNbToursMax());
         labelTour.setFont(new Font("Arial", Font.BOLD, 14));
+
+        // Affichage prédiction combat
+        if(combatPreview.defenseUnite != 0){ // S'affiche uniquement si 2 unités sont renseignées dans le champ
+            combatPreview.showPercents();
+        }else{
+            combatPreview.hidePercents();
+        }
 
         for (int x = 0; x < sizeX; x++) {
             for (int y = 0; y < sizeY; y++) {
@@ -340,10 +389,12 @@ public class VueControleur extends JFrame implements Observer {
         System.out.println("      RÉSULTAT DU COMBAT");
         System.out.println("═══════════════════════════════════");
         System.out.println("⚔️  ATTAQUANT: " + attaquantNom + " (" + attaquantJoueur + ")");
-        System.out.println("    Force d'attaque: " + resultat.forceAttaquant);
+        System.out.println("    Force d'attaque: " + resultat.forceAttaquant + resultat.descriptionTerrainDefenseur);
         System.out.println();
         System.out.println("🛡️  DÉFENSEUR: " + defenseurNom + " (" + defenseurJoueur + ")");
-        System.out.println("    Force de défense: " + resultat.forceDefenseur + resultat.descriptionTerrain);
+        System.out.println("    Force de défense: " + resultat.forceDefenseur + resultat.descriptionTerrainDefenseur);
+        System.out.println();
+        System.out.println("    Proba de gagner pour l'attaque: " + (double) resultat.forceAttaquant / (resultat.forceAttaquant + resultat.forceDefenseur));
         System.out.println();
         System.out.println("───────────────────────────────────");
         if (resultat.attaquantGagne) {

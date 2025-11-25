@@ -11,10 +11,11 @@ public class Jeu extends Thread{
     private Plateau plateau;
     private Joueur [] joueurs;
     private int indexJoueurCourant;
-    private int nbToursMax = 10; // Nombre de tours prédéfini
+    private int nbToursMax = 6; // Nombre de tours prédéfini
     private int tourActuel = 0;
     protected Coup coupRecu;
     private ResultatCombat dernierResultatCombat;
+    private boolean hasEnded;
 
     private static final int nbJoueurs = 4;
 
@@ -108,6 +109,8 @@ public class Jeu extends Thread{
     public int getNbToursMax() {
         return nbToursMax;
     }
+
+    public boolean hasEnded(){ return hasEnded;}
 
     public Joueur[] getJoueurs() {
         return joueurs;
@@ -217,13 +220,8 @@ public class Jeu extends Thread{
                 Unites u = c.getUnites();
                 
                 // Si la case contient au moins une unité du joueur
-                if (u != null && u.getProprietaire() == joueur) {
-                    points++; // 1 point pour la case occupée
-                    
-                    // Bonus si le type d'unité correspond au peuple préféré
-                    if (u.getTypePeuple() == peuplePreference) {
-                        // Pas de bonus supplémentaire selon le PDF, juste 1 point par case
-                    }
+                if (u != null && u.getProprietaire() == joueur && u.getTypePeuple().getTerrainFavori() == u.getCase().getBiome()) {
+                    points+= 2; // 1 point pour la case occupée si le terrain est favori
                 }
             }
         }
@@ -249,7 +247,10 @@ public class Jeu extends Thread{
         }
         
         System.out.println("\nLe gagnant est : " + gagnant.toString() + " !");
-        
+
+        // Désactiver les actions
+        hasEnded = !hasEnded;
+
         // Optionnel : arrêter le jeu
         // System.exit(0);
     }

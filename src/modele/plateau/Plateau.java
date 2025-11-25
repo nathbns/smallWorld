@@ -255,7 +255,8 @@ public class Plateau extends Observable {
      * Effectue une attaque entre deux cases
      * @return ResultatCombat avec les détails du combat
      */
-    public modele.jeu.ResultatCombat attaquer(Case caseAttaquant, Case caseDefenseur) {
+    /*
+    public modele.jeu.ResultatCombat attaquer2(Case caseAttaquant, Case caseDefenseur) {
         if (caseAttaquant == null || caseDefenseur == null) {
             return null;
         }
@@ -312,6 +313,7 @@ public class Plateau extends Observable {
         
         return resultat;
     }
+    */
 
 
     /** Indique si p est contenu dans la grille
@@ -331,6 +333,91 @@ public class Plateau extends Observable {
 
     public Point getPosition(Case c) {
         return map.get(c);
+    }
+
+
+    public modele.jeu.ResultatCombat attaquer(Case caseAttaquant, Case caseDefenseur) {
+        if (caseAttaquant == null || caseDefenseur == null) {
+            return null;
+        }
+
+        Unites attaquant = caseAttaquant.getUnites();
+        Unites defenseur = caseDefenseur.getUnites();
+
+        if (attaquant == null || defenseur == null) {
+            return null;
+        }
+
+        // Calcul aléatoire du combat
+        int forceAtt = attaquant.calculAttaqueTotale();
+        int forceDef = defenseur.calculDefenseTotale();
+
+        // Bonus de terrain pour le défenseur
+        String descriptionTerrain2 = "";
+        Biome biomeDefenseur = caseDefenseur.getBiome();
+        if (biomeDefenseur == defenseur.getTypePeuple().getTerrainFavori()) {
+            descriptionTerrain2 = " (Bonus Terrain +50%)";
+        } else if (biomeDefenseur == defenseur.getTypePeuple().getTerrainDeteste()) {
+            descriptionTerrain2 = " (Bonus Terrain -33%)";
+        }
+
+        // Bonus de terrain pour l'attaquant
+        String descriptionTerrain1 = "";
+        Biome biomeAttaquant = caseAttaquant.getBiome();
+        if (biomeAttaquant == attaquant.getTypePeuple().getTerrainFavori()) {
+            descriptionTerrain1 = " (Bonus Terrain +50%)";
+        } else if (biomeAttaquant == attaquant.getTypePeuple().getTerrainDeteste()) {
+            descriptionTerrain1 = " (Bonus Terrain -33%)";
+        }
+
+
+        Random rand = new Random();
+
+        // Calcul des probabilites
+        int forceTotal = forceAtt + forceDef;
+        double probaGagne = (float) forceAtt / forceTotal; // Probabilite que l'attaquand gagne en pourcentage/100
+        double probaRand = rand.nextDouble(); // Nombre aleatoire qui determine le resultat
+        System.out.println("Proba choisie aléatoirement : " + probaRand);
+        boolean attaquantGagne = probaGagne > probaRand; // Resultat aléatoire
+
+        // Créer le résultat avant de modifier le plateau
+        modele.jeu.ResultatCombat resultat = new modele.jeu.ResultatCombat(
+                attaquant, defenseur, forceAtt, forceDef, attaquantGagne, descriptionTerrain1, descriptionTerrain2
+        );
+
+        if (attaquantGagne) {
+            // Le défenseur perd une unité
+            if(defenseur.getNbUnit() > 1){
+                defenseur.setNbUnit(defenseur.getNbUnit()-1);
+            }else{ // Le defenseur n'a plus qu'une unité
+                Joueur joueurDefenseur = defenseur.getProprietaire();
+                defenseur.quitterCase(); // L'unité défenseur quitte sa case
+                if (joueurDefenseur != null) {
+                    joueurDefenseur.retirerUnite(defenseur); // Retirer de la liste du joueur
+                }
+                // L'attaquant prend sa place
+                attaquant.allerSurCase(caseDefenseur);
+            }
+        }else{
+            // L'attaquant perd une unité
+            if(attaquant.getNbUnit() > 1){
+                attaquant.setNbUnit(attaquant.getNbUnit()-1);
+            }else{  // L'attaquant n'a plus qu'une unité
+                Joueur joueurAttaquant = attaquant.getProprietaire();
+                attaquant.quitterCase(); // L'unité attaquante quitte sa case
+                if (joueurAttaquant != null) {
+                    joueurAttaquant.retirerUnite(attaquant); // Retirer de la liste du joueur
+                }
+            }
+        }
+
+        // Marquer l'unité comme ayant joué
+        attaquant.marquerCommeJouee();
+
+        setChanged();
+        notifyObservers();
+
+        return resultat;
     }
 
 

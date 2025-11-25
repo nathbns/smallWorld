@@ -6,18 +6,20 @@ import java.util.Random;
 
 
 public enum TypePeuple {
-    HUMAIN("Humain", Biome.PLAINE, 8),
-    ELFE("Elfe", Biome.FORET, 8),
-    NAIN("Nain", Biome.MONTAGNE, 8),
-    GOBELIN("Gobelin", Biome.DESERT, 8);
+    HUMAIN("Humain", Biome.PLAINE, Biome.MONTAGNE, 8),
+    ELFE("Elfe", Biome.FORET, Biome.DESERT, 8),
+    NAIN("Nain", Biome.MONTAGNE, Biome.FORET, 8),
+    GOBELIN("Gobelin", Biome.DESERT, Biome.PLAINE, 8);
 
     private String nom;
     private Biome terrainFavori;
+    private Biome terrainDeteste;
     private int nombreUnitesInitial;
 
-    TypePeuple(String nom, Biome terrainFavori, int nombreUnitesInitial) {
+    TypePeuple(String nom, Biome terrainFavori, Biome terrainDeteste , int nombreUnitesInitial) {
         this.nom = nom;
         this.terrainFavori = terrainFavori;
+        this.terrainDeteste = terrainDeteste;
         this.nombreUnitesInitial = nombreUnitesInitial;
     }
 
@@ -32,6 +34,10 @@ public enum TypePeuple {
 
     public Biome getTerrainFavori() {
         return terrainFavori;
+    }
+
+    public Biome getTerrainDeteste() {
+        return terrainDeteste;
     }
 
     public int getNombreUnitesInitial() {

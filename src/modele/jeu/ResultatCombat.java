@@ -8,15 +8,17 @@ public class ResultatCombat {
     public int forceAttaquant;
     public int forceDefenseur;
     public boolean attaquantGagne;
-    public String descriptionTerrain;
+    public String descriptionTerrainAttaquant;
+    public String descriptionTerrainDefenseur;
     
-    public ResultatCombat(Unites att, Unites def, int forceAtt, int forceDef, boolean gagneAtt, String terrain) {
+    public ResultatCombat(Unites att, Unites def, int forceAtt, int forceDef, boolean gagneAtt, String terrain1, String terrain2) {
         attaquant = att;
         defenseur = def;
-        forceAttaquant = forceAtt;
-        forceDefenseur = forceDef;
+        forceAttaquant = attaquant.calculAttaqueTotale();
+        forceDefenseur = defenseur.calculDefenseTotale();
         attaquantGagne = gagneAtt;
-        descriptionTerrain = terrain;
+        descriptionTerrainAttaquant = terrain1;
+        descriptionTerrainDefenseur = terrain2;
     }
 }
 

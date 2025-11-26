@@ -411,9 +411,9 @@ public class VueControleur extends JFrame implements Observer {
         System.out.println();
         System.out.println("───────────────────────────────────");
         if (resultat.attaquantGagne) {
-            System.out.println("🎉 VICTOIRE ! " + gagnant + " remporte le combat !");
+            System.out.println("VICTOIRE ! " + gagnant + " remporte le combat !");
         } else {
-            System.out.println("💀 DÉFAITE... " + gagnant + " remporte le combat !");
+            System.out.println("DÉFAITE... " + gagnant + " remporte le combat !");
         }
         System.out.println("═══════════════════════════════════\n");
     }

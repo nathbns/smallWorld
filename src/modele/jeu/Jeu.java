@@ -40,8 +40,9 @@ public class Jeu extends Thread{
         // Taille du plateau
         if(nbJoueurs > 2){
             Plateau.SIZE_X = 7; Plateau.SIZE_Y = 7;
-        }else{
-            Plateau.SIZE_X = 6; Plateau.SIZE_Y = 6;
+        } else { 
+            Plateau.SIZE_X = 6; 
+            Plateau.SIZE_Y = 6;
         }
 
         // Initialisation du plateau
@@ -241,7 +242,6 @@ public class Jeu extends Thread{
 
     private int calculerPointsTour(Joueur joueur) {
         int points = 0;
-        TypePeuple peuplePreference = joueur.getPeuple();
         
         // Parcourir toutes les cases du plateau
         for (int x = 0; x < Plateau.SIZE_X; x++) {

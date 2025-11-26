@@ -6,10 +6,10 @@ import java.util.Random;
 
 
 public enum TypePeuple {
-    HUMAIN("Humain", Biome.PLAINE, Biome.MONTAGNE, 8),
+    HUMAIN("Humain", Biome.PLAINE, Biome.MONTAGNE, 11),
     ELFE("Elfe", Biome.FORET, Biome.DESERT, 8),
-    NAIN("Nain", Biome.MONTAGNE, Biome.FORET, 8),
-    GOBELIN("Gobelin", Biome.DESERT, Biome.PLAINE, 8);
+    NAIN("Nain", Biome.MONTAGNE, Biome.FORET, 10),
+    GOBELIN("Gobelin", Biome.DESERT, Biome.PLAINE, 13);
 
     private String nom;
     private Biome terrainFavori;

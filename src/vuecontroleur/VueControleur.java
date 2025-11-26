@@ -44,6 +44,7 @@ public class VueControleur extends JFrame implements Observer {
     
     private List<Case> casesAccessibles;
     private List<Case> casesAttaquables;
+    private List<Case> casesSuperposables;
     
     private JLabel labelJoueurCourant;
     private JLabel labelTour;
@@ -157,9 +158,11 @@ public class VueControleur extends JFrame implements Observer {
                                 // Afficher les cases accessibles et attaquables
                                 if (!unite.aDeplaceOuAttaque()) {
                                     casesAccessibles = plateau.getCasesAccessibles(caseClic1, jeu.getJoueurCourant());
+                                    casesSuperposables = plateau.getCasesAlliees(caseClic1, jeu.getJoueurCourant());
                                     combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
                                 } else {
                                     casesAccessibles = null;
+                                    casesSuperposables = null;
                                 }
                                 
                                 if (!unite.aJoueCeTour()) {
@@ -185,6 +188,7 @@ public class VueControleur extends JFrame implements Observer {
                                 caseClic2 = null;
                                 casesAccessibles = null;
                                 casesAttaquables = null;
+                                casesSuperposables = null;
                                 combatPreview.attaqueUnite = 0;
                                 mettreAJourAffichage();
                                 return;
@@ -196,6 +200,9 @@ public class VueControleur extends JFrame implements Observer {
                                 coupValide = true;
                                 combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
                             } else if (casesAttaquables != null && casesAttaquables.contains(caseClic2)) {
+                                coupValide = true;
+                                combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
+                            } else if (casesSuperposables != null && casesSuperposables.contains(caseClic2)) {
                                 coupValide = true;
                                 combatPreview.attaqueUnite = caseClic1.getUnites().calculAttaqueTotale();
                             }
@@ -216,6 +223,7 @@ public class VueControleur extends JFrame implements Observer {
                             caseClic2 = null;
                             casesAccessibles = null;
                             casesAttaquables = null;
+                            casesSuperposables = null;
                             mettreAJourAffichage();
                         }
 
@@ -350,6 +358,11 @@ public class VueControleur extends JFrame implements Observer {
                 if (casesAttaquables != null && casesAttaquables.contains(c)) {
                     tabIP[x][y].setBorderColor(Color.RED); // Cases attaquables
                     tabIP[x][y].setFillColor(new Color(255, 0, 0, 70));
+                }
+
+                if (casesSuperposables != null && casesSuperposables.contains(c)) {
+                    tabIP[x][y].setBorderColor(Color.BLUE); // Cases alliees
+                    tabIP[x][y].setFillColor(new Color(0, 0, 120, 10));
                 }
 
             }

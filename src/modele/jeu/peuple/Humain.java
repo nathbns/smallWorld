@@ -31,4 +31,6 @@ public class Humain extends Unites {
     public TypePeuple getTypePeuple() {
         return TypePeuple.HUMAIN;
     }
+
+
 }

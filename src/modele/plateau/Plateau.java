@@ -252,6 +252,53 @@ public class Plateau extends Observable {
     }
 
     /**
+     * Calcule les cases accessibles pour un allie
+     */
+    public List<Case> getCasesAlliees(Case caseDepart, Joueur joueur) {
+        List<Case> casesAlliees = new ArrayList<>();
+
+        if (caseDepart == null || caseDepart.getUnites() == null) {
+            return casesAlliees;
+        }
+
+        Unites unite = caseDepart.getUnites();
+
+        // Vérifier que l'unité appartient au joueur
+        if (unite.getProprietaire() != joueur) {
+            return casesAlliees;
+        }
+
+        // Si l'unité a déjà déplacé ou attaqué, elle ne peut plus bouger
+        if (unite.aDeplaceOuAttaque()) {
+            return casesAlliees;
+        }
+
+        Point posDepart = map.get(caseDepart);
+        int portee = unite.getPorteeDeplacement();
+
+        // Parcourir toutes les cases dans la portée de déplacement
+        for (int dx = -portee; dx <= portee; dx++) {
+            for (int dy = -portee; dy <= portee; dy++) {
+                if (dx == 0 && dy == 0) continue; // Pas la case de départ
+
+                int newX = posDepart.x + dx;
+                int newY = posDepart.y + dy;
+
+                if (contenuDansGrille(new Point(newX, newY))) {
+                    Case c = grilleCases[newX][newY];
+
+                    // Une case est accessible pour l'allie si elle ou contient une unité alliee
+                    if (c.getUnites() != null && c.getUnites().getProprietaire() == joueur) {
+                        casesAlliees.add(c);
+                    }
+                }
+            }
+        }
+
+        return casesAlliees;
+    }
+
+    /**
      * Effectue une attaque entre deux cases
      * @return ResultatCombat avec les détails du combat
      */

@@ -63,32 +63,46 @@ public class Jeu extends Thread{
     protected void initUnitesJoueurs(Joueur [] j){
 
         Random rand = new Random();
+        int maxUnitParCase = 4; // Nombre d'unites maximum; sur une case
+        int nbMaxUnitSurPlateau = 5; // Nombre d'unites maximum sur le plateau
 
         for(int i = 0; i < j.length; i++){
             if(j[i] == null){
                 continue;
             }
+            int nbUnitRestant = j[i].getPeuple().getNombreUnitesInitial(); // Nombre d'unites a placer sur le plateau
             switch (j[i].getPeuple()){
                 case ELFE:
-                    for(int unites = 0; unites < 5; unites++){ // Nombre d'unites arbitraire pour le moment
-                        j[i].ajouterUnite(new Elfe(plateau,rand.nextInt(3)+1));
+                    for(int unites = 0; unites < nbMaxUnitSurPlateau; unites++){ // Nombre d'unites arbitraire pour le moment
+                        j[i].ajouterUnite(new Elfe(plateau,1));
+                        nbUnitRestant--;
                     }
                     break;
                 case GOBELIN:
-                    for(int unites = 0; unites < 5; unites++){
-                        j[i].ajouterUnite(new Gobelin(plateau,rand.nextInt(3)+1));
+                    for(int unites = 0; unites < nbMaxUnitSurPlateau; unites++){
+                        j[i].ajouterUnite(new Gobelin(plateau,1));
+                        nbUnitRestant--;
                     }
                     break;
                 case HUMAIN:
-                    for(int unites = 0; unites < 5; unites++){
-                        j[i].ajouterUnite(new Humain(plateau,rand.nextInt(3)+1));
+                    for(int unites = 0; unites < nbMaxUnitSurPlateau; unites++){
+                        j[i].ajouterUnite(new Humain(plateau,1));
+                        nbUnitRestant--;
                     }
                     break;
                 case NAIN:
-                    for(int unites = 0; unites < 5; unites++){
-                        j[i].ajouterUnite(new Nain(plateau,rand.nextInt(3)+1));
+                    for(int unites = 0; unites < nbMaxUnitSurPlateau; unites++){
+                        j[i].ajouterUnite(new Nain(plateau,1));
+                        nbUnitRestant--;
                     }
                     break;
+            }
+            while (nbUnitRestant > 0){
+                int idUnit = rand.nextInt(nbMaxUnitSurPlateau);
+                if(j[i].getUnite(idUnit).getNbUnit() < maxUnitParCase){
+                    j[i].getUnite(idUnit).setNbUnit(j[i].getUnite(idUnit).getNbUnit()+1);
+                    nbUnitRestant--;
+                }
             }
         }
 
@@ -160,6 +174,22 @@ public class Jeu extends Thread{
                     System.out.println(getJoueurCourant().getCouleur() + " a gagné un combat ! Points: " + getJoueurCourant().getScore());
                 }
             }
+        } else if (uniteArr != null && uniteArr.getProprietaire() == getJoueurCourant()) {
+            // C'est une superposition
+            List<Case> casesAlliees = plateau.getCasesAlliees(dep, getJoueurCourant());
+            if (casesAlliees.contains(arr)) {
+                if(unite.getNbUnit() > 1){ // Deplacement d'une unite vers l'autre case
+                    unite.setNbUnit(unite.getNbUnit() - 1);
+                    arr.getUnites().setNbUnit(arr.getUnites().getNbUnit() + 1);
+                    unite.marquerCommeFinDeTour();
+                }else{ // La seule unite se deplace vers l'autre unite
+                    Joueur joueur = unite.getProprietaire();
+                    unite.quitterCase();
+                    joueur.retirerUnite(unite);
+                    arr.getUnites().setNbUnit(arr.getUnites().getNbUnit() + 1);
+                }
+            }
+
         } else {
             // C'est un déplacement
             List<Case> casesAccessibles = plateau.getCasesAccessibles(dep, getJoueurCourant());

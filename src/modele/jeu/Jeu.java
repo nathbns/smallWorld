@@ -4,8 +4,10 @@ import modele.jeu.peuple.*;
 import modele.plateau.Case;
 import modele.plateau.Plateau;
 
+import java.awt.Point;
 import java.util.List;
 import java.util.Random;
+import java.util.ArrayList;
 
 public class Jeu extends Thread{
     private Plateau plateau;
@@ -16,8 +18,12 @@ public class Jeu extends Thread{
     protected Coup coupRecu;
     private ResultatCombat dernierResultatCombat;
     private boolean hasEnded;
+    private Joueur gagnantFinal;
+    private final List<HistoriqueCoup> historique = new ArrayList<>();
+    private final List<PlateauSnapshot> snapshots = new ArrayList<>();
 
     private int nbJoueurs;
+    private boolean[] joueursIA;
     private static final String[] COULEURS = {"Rouge", "Bleu", "Jaune", "Vert"};
 
     public TypePeuple randomPeuple(){
@@ -27,7 +33,13 @@ public class Jeu extends Thread{
 
     // Nombre de joueurs et peuples choisis
     public Jeu(int nombreJoueurs, TypePeuple[] peuplesChoisis) {
+        this(nombreJoueurs, peuplesChoisis, new boolean[nombreJoueurs]);
+    }
+
+    // Variante avec configuration IA
+    public Jeu(int nombreJoueurs, TypePeuple[] peuplesChoisis, boolean[] joueursIA) {
         this.nbJoueurs = nombreJoueurs;
+        this.joueursIA = joueursIA != null ? joueursIA : new boolean[nombreJoueurs];
         joueurs = new Joueur[nombreJoueurs];
 
         // Initialisation des joueurs avec leurs peuples choisis
@@ -56,6 +68,11 @@ public class Jeu extends Thread{
         // Initialisation des unités sur le plateau
         plateau.addJoueur(joueurs);
 
+        // Snapshot initial
+        snapshots.add(captureSnapshot());
+
+        // Le thread n'est plus indispensable pour les actions synchrones
+        // mais on le conserve pour compatibilité éventuelle.
         start();
     }
 
@@ -117,8 +134,94 @@ public class Jeu extends Thread{
         return plateau;
     }
 
+    private Unites creerUnite(TypePeuple t, int nb){
+        switch (t){
+            case ELFE: return new Elfe(plateau, nb);
+            case HUMAIN: return new Humain(plateau, nb);
+            case NAIN: return new Nain(plateau, nb);
+            case GOBELIN: return new Gobelin(plateau, nb);
+            default: return null;
+        }
+    }
+
+    public PlateauSnapshot captureSnapshot(){
+        PlateauSnapshot snap = new PlateauSnapshot(Plateau.SIZE_X, Plateau.SIZE_Y, joueurs.length);
+        for(int x=0;x<Plateau.SIZE_X;x++){
+            for(int y=0;y<Plateau.SIZE_Y;y++){
+                Case c = plateau.getCases()[x][y];
+                Unites u = c.getUnites();
+                if(u != null){
+                    snap.cells[x][y] = new SnapshotCell(u.getTypePeuple(), u.getNbUnit(), indexOfJoueur(u.getProprietaire()));
+                }
+            }
+        }
+        for(int i=0;i<joueurs.length;i++){
+            snap.scores[i] = joueurs[i] != null ? joueurs[i].getScore() : 0;
+        }
+        return snap;
+    }
+
+    public void appliquerSnapshot(int idx){
+        PlateauSnapshot snap = getSnapshot(idx);
+        if(snap == null){
+            return;
+        }
+        // vider
+        for(int x=0;x<Plateau.SIZE_X;x++){
+            for(int y=0;y<Plateau.SIZE_Y;y++){
+                Case c = plateau.getCases()[x][y];
+                if(c.getUnites()!=null){
+                    c.getUnites().quitterCase();
+                }
+            }
+        }
+        // reposer
+        for(int x=0;x<Plateau.SIZE_X;x++){
+            for(int y=0;y<Plateau.SIZE_Y;y++){
+                SnapshotCell cell = snap.cells[x][y];
+                if(cell != null){
+                    Unites u = creerUnite(cell.type, cell.nb);
+                    if(u != null && cell.ownerIndex >=0 && cell.ownerIndex < joueurs.length){
+                        u.setProprietaire(joueurs[cell.ownerIndex]);
+                        u.allerSurCase(plateau.getCases()[x][y]);
+                    }
+                }
+            }
+        }
+        // scores
+        for(int i=0;i<joueurs.length && i<snap.scores.length;i++){
+            if(joueurs[i]!=null){
+                joueurs[i].setScore(snap.scores[i]);
+            }
+        }
+        plateau.refresh();
+    }
+
     public Joueur getJoueurCourant() {
         return joueurs[indexJoueurCourant];
+    }
+
+    public int getIndexJoueurCourant(){
+        return indexJoueurCourant;
+    }
+
+    public int getNbJoueurs(){
+        return nbJoueurs;
+    }
+
+    private int indexOfJoueur(Joueur j){
+        for(int i=0;i<joueurs.length;i++){
+            if(joueurs[i]==j) return i;
+        }
+        return -1;
+    }
+
+    public boolean estIA(int index){
+        return joueursIA != null && index >=0 && index < joueursIA.length && joueursIA[index];
+    }
+
+    public boolean estJoueurCourantIA(){
+        return estIA(indexJoueurCourant);
     }
 
     public int getTourActuel() {
@@ -178,6 +281,10 @@ public class Jeu extends Thread{
                     getJoueurCourant().ajouterPoints(1);
                     System.out.println(getJoueurCourant().getCouleur() + " a gagné un combat ! Points: " + getJoueurCourant().getScore());
                 }
+                if(resultatCombat != null){
+                    enregistrerCoup(dep, arr);
+                    snapshots.add(captureSnapshot());
+                }
             }
         } else if (uniteArr != null && uniteArr.getProprietaire() == getJoueurCourant()) {
             // C'est une superposition
@@ -193,6 +300,8 @@ public class Jeu extends Thread{
                     joueur.retirerUnite(unite);
                     arr.getUnites().setNbUnit(arr.getUnites().getNbUnit() + 1);
                 }
+                enregistrerCoup(dep, arr);
+                snapshots.add(captureSnapshot());
             }
 
         } else {
@@ -201,6 +310,8 @@ public class Jeu extends Thread{
             if (casesAccessibles.contains(arr)) {
                 plateau.deplacerUnite(dep, arr);
                 unite.marquerDeplaceOuAttaque();
+                enregistrerCoup(dep, arr);
+                snapshots.add(captureSnapshot());
             }
         }
         
@@ -211,6 +322,35 @@ public class Jeu extends Thread{
         // Le joueur doit cliquer sur "Passer le tour" pour finir son tour
         
         return resultatCombat;
+    }
+
+    private void enregistrerCoup(Case dep, Case arr){
+        Point pDep = plateau.getPosition(dep);
+        Point pArr = plateau.getPosition(arr);
+        if(pDep == null || pArr == null){
+            return;
+        }
+        historique.add(new HistoriqueCoup(
+                pDep.x, pDep.y,
+                pArr.x, pArr.y,
+                indexJoueurCourant,
+                tourActuel,
+                getJoueurCourant().getCouleur(),
+                getJoueurCourant().getPeuple().getNom()
+        ));
+    }
+
+    public List<HistoriqueCoup> getHistorique(){
+        return historique;
+    }
+
+    public int getNbSnapshots(){
+        return snapshots.size();
+    }
+
+    public PlateauSnapshot getSnapshot(int idx){
+        if(idx < 0 || idx >= snapshots.size()) return null;
+        return snapshots.get(idx);
     }
 
     public ResultatCombat getDernierResultatCombat() {
@@ -273,6 +413,7 @@ public class Jeu extends Thread{
                 gagnant = joueurs[i];
             }
         }
+        gagnantFinal = gagnant;
         
         // Afficher les scores
         System.out.println("\nScores finaux:");
@@ -287,6 +428,10 @@ public class Jeu extends Thread{
 
         // Optionnel : arrêter le jeu
         // System.exit(0);
+    }
+
+    public Joueur getGagnantFinal(){
+        return gagnantFinal;
     }
 
     public void run() {
@@ -304,5 +449,44 @@ public class Jeu extends Thread{
 
     }
 
+
+    public static class PlateauSnapshot{
+        public final SnapshotCell[][] cells;
+        public final int[] scores;
+        public PlateauSnapshot(int sizeX, int sizeY, int nbJoueurs){
+            cells = new SnapshotCell[sizeX][sizeY];
+            scores = new int[nbJoueurs];
+        }
+    }
+
+    public static class SnapshotCell{
+        public final TypePeuple type;
+        public final int nb;
+        public final int ownerIndex;
+        public SnapshotCell(TypePeuple type, int nb, int ownerIndex){
+            this.type = type;
+            this.nb = nb;
+            this.ownerIndex = ownerIndex;
+        }
+    }
+
+    public static class HistoriqueCoup{
+        public final int depX, depY, arrX, arrY;
+        public final int joueurIndex;
+        public final int tour;
+        public final String joueurCouleur;
+        public final String peuple;
+
+        public HistoriqueCoup(int depX, int depY, int arrX, int arrY, int joueurIndex, int tour, String couleur, String peuple){
+            this.depX = depX;
+            this.depY = depY;
+            this.arrX = arrX;
+            this.arrY = arrY;
+            this.joueurIndex = joueurIndex;
+            this.tour = tour;
+            this.joueurCouleur = couleur;
+            this.peuple = peuple;
+        }
+    }
 
 }

@@ -5,10 +5,13 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 import javax.swing.*;
+import modele.ia.RechercheArbreMonteCarlo;
 import modele.jeu.peuple.*;
 import modele.jeu.Coup;
 import modele.jeu.Jeu;
+import modele.jeu.Joueur;
 import modele.jeu.ResultatCombat;
+import modele.plateau.Biome;
 import modele.plateau.Case;
 import modele.plateau.Plateau;
 
@@ -45,9 +48,27 @@ public class VueControleur extends JFrame implements Observer {
     private List<Case> casesAccessibles, casesAttaquables, casesSuperposables;
     
     private JLabel labelJoueurCourant, labelTour;
+    private JLabel labelTerrainFavori;
     private JButton btnPasserTour;
+    private JButton btnCoupPrev, btnCoupNext;
+    private boolean reviewMode = false;
+    private int reviewIndex = -1;
+    private boolean finAnnoncee = false;
     private CombatPreview combatPreview;
     private ImagePanel[][] tabIP;
+    private RechercheArbreMonteCarlo mcts = new RechercheArbreMonteCarlo();
+    private Case lastDep, lastArr;
+    private javax.swing.Timer lastMoveTimer;
+
+    private String formatBiome(Biome biome){
+        switch (biome){
+            case PLAINE: return "Plaine";
+            case MONTAGNE: return "Montagne";
+            case FORET: return "Forêt";
+            case DESERT: return "Désert";
+            default: return biome != null ? biome.name() : "";
+        }
+    }
     
     public VueControleur() {
         setTitle("SmallWorld par Nathan && Leonard");
@@ -157,9 +178,12 @@ public class VueControleur extends JFrame implements Observer {
         for (int i = 0; i < nbJoueurs; i++) {
             peuplesChoisis[i] = peuplesMelanges.get(i);
         }
+
+        // Choix du nombre d'IA
+        boolean[] joueursIA = demanderConfigurationIA(nbJoueurs);
         
         // Lancer la partie
-        jeu = new Jeu(nbJoueurs, peuplesChoisis);
+        jeu = new Jeu(nbJoueurs, peuplesChoisis, joueursIA);
         plateau = jeu.getPlateau();
         sizeX = Plateau.SIZE_X;
         sizeY = Plateau.SIZE_Y;
@@ -172,6 +196,9 @@ public class VueControleur extends JFrame implements Observer {
         
         plateau.addObserver(this);
         mettreAJourAffichage();
+
+        // Si le premier joueur est une IA, la faire jouer immédiatement
+        jouerTourIA();
         
         setSize(sizeX * pxCase, sizeY * pxCase + 120);
         setLocationRelativeTo(null);
@@ -215,24 +242,38 @@ public class VueControleur extends JFrame implements Observer {
         labelTour = new JLabel();
         labelTour.setFont(terminalFont);
         labelTour.setForeground(RETRO_TEXT_DIM);
+
+        btnCoupPrev = creerBoutonRetroJeu("←");
+        btnCoupPrev.setPreferredSize(new Dimension(40, 30));
+        btnCoupPrev.setEnabled(false);
+        btnCoupPrev.addActionListener(e -> montrerCoup(-1));
+
+        btnCoupNext = creerBoutonRetroJeu("→");
+        btnCoupNext.setPreferredSize(new Dimension(40, 30));
+        btnCoupNext.setEnabled(false);
+        btnCoupNext.addActionListener(e -> montrerCoup(1));
         
         btnPasserTour = creerBoutonRetroJeu("[ FIN TOUR ]");
-        btnPasserTour.addActionListener(e -> {
-            if(jeu.hasEnded()){
-                return;
-            }
-            jeu.passerAuJoueurSuivant();
-            caseClic1 = null;
-            caseClic2 = null;
-            casesAccessibles = null;
-            casesAttaquables = null;
-            mettreAJourAffichage();
-        });
+        // Fin de tour automatique : un coup par tour
+        btnPasserTour.setEnabled(false);
         
         panelDroite.add(labelTour);
+        panelDroite.add(btnCoupPrev);
+        panelDroite.add(btnCoupNext);
         panelDroite.add(btnPasserTour);
         
-        panelInfo.add(labelJoueurCourant, BorderLayout.WEST);
+        JPanel panelGauche = new JPanel();
+        panelGauche.setLayout(new BoxLayout(panelGauche, BoxLayout.Y_AXIS));
+        panelGauche.setBackground(RETRO_BG_DARK);
+
+        labelTerrainFavori = new JLabel();
+        labelTerrainFavori.setFont(terminalFont);
+        labelTerrainFavori.setForeground(RETRO_TEXT_DIM);
+
+        panelGauche.add(labelJoueurCourant);
+        panelGauche.add(labelTerrainFavori);
+
+        panelInfo.add(panelGauche, BorderLayout.WEST);
         panelInfo.add(panelDroite, BorderLayout.EAST);
         
         panel.add(panelInfo, BorderLayout.NORTH);
@@ -328,15 +369,12 @@ public class VueControleur extends JFrame implements Observer {
                             
                             if (coupValide) {
                                 Coup coup = new Coup(caseClic1, caseClic2);
-                                jeu.envoyerCoup(coup);
+                                jeu.appliquerCoup(coup);
                                 combatPreview.attaqueUnite = 0;
-                                
-                                // Attendre un peu pour voir le résultat avant d'afficher le dialogue
-                                try {
-                                    Thread.sleep(100);
-                                } catch (InterruptedException ex) {}
+                                marquerDernierCoup(caseClic1, caseClic2);
+                                jeu.passerAuJoueurSuivant(); // un coup par tour
                             }
-                            
+
                             // Réinitialiser la sélection
                             caseClic1 = null;
                             caseClic2 = null;
@@ -344,6 +382,7 @@ public class VueControleur extends JFrame implements Observer {
                             casesAttaquables = null;
                             casesSuperposables = null;
                             mettreAJourAffichage();
+                            jouerTourIA();
                         }
                     }
                 });
@@ -355,7 +394,7 @@ public class VueControleur extends JFrame implements Observer {
                         if(caseClic1 != null && caseSurvolee.getUnites() != null && caseSurvolee.getUnites().getProprietaire() != caseClic1.getUnites().getProprietaire()){
                                 combatPreview.defenseUnite = caseSurvolee.getUnites().calculDefenseTotale();
                                 System.out.println(combatPreview.attaqueUnite + " contre " + combatPreview.defenseUnite);
-                                combatPreview.calculatePercents(caseClic1,caseSurvolee);
+                                combatPreview.calculerPourcentages(caseClic1,caseSurvolee);
                                 mettreAJourAffichage();
                         }
                     }
@@ -417,6 +456,30 @@ public class VueControleur extends JFrame implements Observer {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
     }
+
+    /**
+     * Demande combien d'IA doivent être utilisées.
+     * Les IA sont assignées aux derniers joueurs pour laisser le joueur humain commencer.
+     */
+    private boolean[] demanderConfigurationIA(int nbJoueurs){
+        String message = "Combien d'IA MCTS souhaitez-vous ? (0 à " + nbJoueurs + ")";
+        String input = JOptionPane.showInputDialog(this, message, "IA MCTS", JOptionPane.QUESTION_MESSAGE);
+        int nbIA = 0;
+        try{
+            nbIA = Integer.parseInt(input);
+            if(nbIA < 0) nbIA = 0;
+            if(nbIA > nbJoueurs) nbIA = nbJoueurs;
+        }catch(Exception e){
+            nbIA = 0;
+        }
+
+        boolean[] ia = new boolean[nbJoueurs];
+        // On place les IA à la fin pour que le premier joueur soit humain par défaut
+        for(int i = 0; i < nbIA; i++){
+            ia[nbJoueurs - 1 - i] = true;
+        }
+        return ia;
+    }
     
     private void mettreAJourAffichage() {
         if (jeu == null) return;
@@ -425,17 +488,32 @@ public class VueControleur extends JFrame implements Observer {
         String peuple = jeu.getJoueurCourant().getPeuple().getNom().toUpperCase();
         int score = jeu.getJoueurCourant().getScore();
         
-        labelJoueurCourant.setText("> " + couleur.toUpperCase() + " [" + peuple + "] - PTS: " + score);
+        labelJoueurCourant.setText("> " + peuple + " - PTS: " + score);
         labelJoueurCourant.setFont(terminalFont);
         labelJoueurCourant.setForeground(getCouleurRetro(couleur));
+
+        Biome favori = jeu.getJoueurCourant().getPeuple().getTerrainFavori();
+        labelTerrainFavori.setText("Terrain favori : " + formatBiome(favori));
         
-        labelTour.setText("TOUR " + jeu.getTourActuel() + "/" + jeu.getNbToursMax());
+        if(reviewMode && jeu.getHistorique().size() > 0){
+            labelTour.setText("Revue " + (reviewIndex+1) + "/" + jeu.getHistorique().size());
+        }else{
+            labelTour.setText("TOUR " + jeu.getTourActuel() + "/" + jeu.getNbToursMax());
+        }
         labelTour.setFont(terminalFont);
 
+        // Détection de fin de partie (même si aucune notification Observable n'est envoyée)
+        if(jeu.hasEnded() && !finAnnoncee){
+            finAnnoncee = true;
+            btnCoupPrev.setEnabled(true);
+            btnCoupNext.setEnabled(true);
+            afficherFinPartie();
+        }
+
         if(combatPreview.defenseUnite != 0){
-            combatPreview.showPercents();
+            combatPreview.afficherPourcentages();
         }else{
-            combatPreview.hidePercents();
+            combatPreview.masquerPourcentages();
         }
 
         for (int x = 0; x < sizeX; x++) {
@@ -484,24 +562,34 @@ public class VueControleur extends JFrame implements Observer {
                 }
 
                 // Couleurs bien visibles pour les surbrillances
-                if (caseClic1 != null && c == caseClic1) {
+                if (!reviewMode && caseClic1 != null && c == caseClic1) {
                     tabIP[x][y].setBorderColor(new Color(255, 180, 0));      // Orange vif
                     tabIP[x][y].setFillColor(new Color(255, 200, 50, 120));
                 }
 
-                if (casesAccessibles != null && casesAccessibles.contains(c)) {
+                if (!reviewMode && casesAccessibles != null && casesAccessibles.contains(c)) {
                     tabIP[x][y].setBorderColor(new Color(50, 200, 50));      // Vert vif
                     tabIP[x][y].setFillColor(new Color(100, 255, 100, 100));
                 }
 
-                if (casesAttaquables != null && casesAttaquables.contains(c)) {
+                if (!reviewMode && casesAttaquables != null && casesAttaquables.contains(c)) {
                     tabIP[x][y].setBorderColor(new Color(220, 50, 50));      // Rouge vif
                     tabIP[x][y].setFillColor(new Color(255, 80, 80, 110));
                 }
 
-                if (casesSuperposables != null && casesSuperposables.contains(c)) {
+                if (!reviewMode && casesSuperposables != null && casesSuperposables.contains(c)) {
                     tabIP[x][y].setBorderColor(new Color(80, 80, 220));      // Bleu vif
                     tabIP[x][y].setFillColor(new Color(120, 120, 255, 100));
+                }
+
+                // Surbrillance du dernier coup joué
+                if (lastDep != null && c == lastDep) {
+                    tabIP[x][y].setBorderColor(new Color(255, 200, 50));
+                    tabIP[x][y].setFillColor(new Color(255, 230, 150, 140));
+                }
+                if (lastArr != null && c == lastArr) {
+                    tabIP[x][y].setBorderColor(new Color(80, 180, 255));
+                    tabIP[x][y].setFillColor(new Color(150, 220, 255, 160));
                 }
             }
         }
@@ -519,6 +607,10 @@ public class VueControleur extends JFrame implements Observer {
                         ResultatCombat resultat = jeu.getDernierResultatCombat();
                         if (resultat != null) {
                             afficherResultatCombatTerminal(resultat);
+                        }
+                        if(jeu.hasEnded() && !finAnnoncee){
+                            finAnnoncee = true;
+                            afficherFinPartie();
                         }
                     }
                 }); 
@@ -552,6 +644,119 @@ public class VueControleur extends JFrame implements Observer {
         System.out.println("═══════════════════════════════════\n");
     }
     
+    /**
+     * Surbrillance courte pour montrer le coup joué.
+     */
+    private void marquerDernierCoup(Case dep, Case arr){
+        lastDep = dep;
+        lastArr = arr;
+        if(lastMoveTimer != null){
+            lastMoveTimer.stop();
+        }
+        lastMoveTimer = new javax.swing.Timer(800, evt -> {
+            lastDep = null;
+            lastArr = null;
+            mettreAJourAffichage();
+        });
+        lastMoveTimer.setRepeats(false);
+        lastMoveTimer.start();
+    }
+
+    /**
+     * Active le mode revue une fois la partie terminée.
+     */
+    private void activerModeRevue(){
+        List<Jeu.HistoriqueCoup> hist = jeu.getHistorique();
+        if(hist == null || hist.isEmpty()){
+            return;
+        }
+        reviewMode = true;
+        reviewIndex = Math.max(0, Math.min(hist.size()-1, reviewIndex == -1 ? 0 : reviewIndex));
+        btnCoupPrev.setEnabled(true);
+        btnCoupNext.setEnabled(true);
+        if(lastMoveTimer != null){
+            lastMoveTimer.stop();
+        }
+        jeu.appliquerSnapshot(reviewIndex+1);
+        mettreAJourAffichage();
+    }
+
+    /**
+     * Affiche les infos de fin de partie (winner + scores).
+     */
+    private void afficherFinPartie(){
+        Joueur gagnant = jeu.getGagnantFinal();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Partie terminée.\n\nScores :\n");
+        for(Joueur j : jeu.getJoueurs()){
+            sb.append(j.toString()).append("\n");
+        }
+        if(gagnant != null){
+            sb.append("\nGagnant : ").append(gagnant.toString());
+        }
+        JOptionPane.showMessageDialog(this, sb.toString(), "Fin de partie", JOptionPane.INFORMATION_MESSAGE);
+        activerModeRevue();
+    }
+
+    /**
+     * Navigation dans l'historique des coups (flèches).
+     */
+    private void montrerCoup(int delta){
+        if(jeu == null || jeu.getHistorique() == null || jeu.getHistorique().isEmpty()){
+            return;
+        }
+        reviewMode = true;
+        List<Jeu.HistoriqueCoup> hist = jeu.getHistorique();
+        reviewIndex = Math.max(0, Math.min(hist.size()-1, (reviewIndex == -1 ? 0 : reviewIndex) + delta));
+        Jeu.HistoriqueCoup hc = hist.get(reviewIndex);
+        // Appliquer l'état du plateau correspondant à ce coup
+        jeu.appliquerSnapshot(reviewIndex+1); // snapshot après ce coup
+        if(lastMoveTimer != null){
+            lastMoveTimer.stop();
+        }
+        lastDep = plateau.getCases()[hc.depX][hc.depY];
+        lastArr = plateau.getCases()[hc.arrX][hc.arrY];
+        mettreAJourAffichage();
+    }
+
+    /**
+     * Déclenche le tour automatique si le joueur courant est une IA.
+     */
+    private void jouerTourIA(){
+        if(jeu == null || plateau == null || !jeu.estJoueurCourantIA() || jeu.hasEnded()){
+            return;
+        }
+
+        // Thread séparé pour ne pas bloquer l'EDT pendant la recherche
+        new Thread(() -> {
+            try {
+                Thread.sleep(150); // petite pause visuelle
+            } catch (InterruptedException ignored) {}
+
+            Coup coupIA = mcts.choisirMeilleurCoup(jeu);
+
+            if(coupIA != null){
+                jeu.appliquerCoup(coupIA);
+                marquerDernierCoup(coupIA.getDep(), coupIA.getArr());
+            }
+
+            jeu.passerAuJoueurSuivant();
+
+            SwingUtilities.invokeLater(() -> {
+                caseClic1 = null;
+                caseClic2 = null;
+                casesAccessibles = null;
+                casesAttaquables = null;
+                casesSuperposables = null;
+                combatPreview.attaqueUnite = 0;
+                combatPreview.defenseUnite = 0;
+                mettreAJourAffichage();
+                // Enchaîner si plusieurs IA consécutives
+                jouerTourIA();
+            });
+        }).start();
+    }
+
 
     private Color getCouleurRetro(String couleur) {
         switch (couleur) {

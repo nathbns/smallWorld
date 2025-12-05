@@ -49,6 +49,10 @@ public class Joueur {
         score += points;
     }
 
+    public void setScore(int score){
+        this.score = score;
+    }
+
     public int getNbUnites() {
         return unites.size();
     }

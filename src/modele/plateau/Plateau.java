@@ -150,6 +150,12 @@ public class Plateau extends Observable {
         notifyObservers();
     }
 
+    // forcer un notif pour le snapshot
+    public void refresh(){
+        setChanged();
+        notifyObservers();
+    }
+
     /**
      * Calcule la distance réelle entre deux points.
      * Les déplacements en diagonale coûtent plus cher racine carre de 2

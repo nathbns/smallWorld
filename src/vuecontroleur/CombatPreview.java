@@ -54,7 +54,7 @@ public class CombatPreview extends JPanel {
     }
 
     // Calcule les pourcentages pour le combat, les met dans les JLabel et les affiche
-    public void calculatePercents(Case c1, Case c2){
+    public void calculerPourcentages(Case c1, Case c2){
         int total = attaqueUnite + defenseUnite;
 
         if(c1.getBiome() == c1.getUnites().getTypePeuple().getTerrainFavori()){
@@ -75,7 +75,7 @@ public class CombatPreview extends JPanel {
         attaquePourcent = (double) attaqueUnite / total;
     }
 
-    public void showPercents(){
+    public void afficherPourcentages(){
         pourcentAttaque.setText(Math.round(attaquePourcent * 100) + " %");
         pourcentDefense.setText(Math.round((1 - attaquePourcent) * 100) + " %");
 
@@ -91,11 +91,11 @@ public class CombatPreview extends JPanel {
         textAttaque.setForeground(colorAttaque);
         textDefense.setForeground(colorDefense);
         textAttaque.setText("Attaque : ");
-        textDefense.setText(" : Defense");
+        textDefense.setText(" : Défense");
         tiret.setText(" - ");
     }
 
-    public void hidePercents(){
+    public void masquerPourcentages(){
         pourcentAttaque.setText(" ");
         pourcentDefense.setText(" ");
         textAttaque.setText(" ");

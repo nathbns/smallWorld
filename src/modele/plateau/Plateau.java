@@ -63,9 +63,9 @@ public class Plateau extends Observable {
 
     public void addJoueur(Joueur [] j) {
 
-        for (int jo = 0; jo < 4; jo++){ // Boucle sur les joueurs
+        for (int jo = 0; jo < j.length; jo++){ // Boucle sur les joueurs
 
-            if(j[jo] == null){ // Si moins de 4 joueurs
+            if(j[jo] == null){ // Si moins de joueurs
                 continue;
             }
 

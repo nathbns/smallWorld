@@ -88,6 +88,8 @@ public class CombatPreview extends JPanel {
         pourcentAttaque.setForeground(colorAttaque);
         pourcentDefense.setForeground(colorDefense);
 
+        textAttaque.setForeground(colorAttaque);
+        textDefense.setForeground(colorDefense);
         textAttaque.setText("Attaque : ");
         textDefense.setText(" : Defense");
         tiret.setText(" - ");

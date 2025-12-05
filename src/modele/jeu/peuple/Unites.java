@@ -90,7 +90,7 @@ public abstract class Unites {
             force = (int) ((double) force * 1.5); // +50%
             //System.out.println("Terrain : " + force);
         } else if (c.getBiome() == getTypePeuple().getTerrainDeteste()) {
-            force = Math.min((int) ((double) force * 0.66),1); // -33%
+            force = Math.max((int) ((double) force * 0.66),1); // -33%
             //System.out.println("Terrain : " + force);
         }
         return force;
@@ -105,7 +105,7 @@ public abstract class Unites {
             def = (int) ((double) def * 1.5); // +50%
             //System.out.println("Terrain : " + def);
         } else if (c.getBiome() == getTypePeuple().getTerrainDeteste()) {
-            def = Math.min((int) ((double) def * 0.66),1); // -33%
+            def = Math.max((int) ((double) def * 0.66),1); // -33%
             //System.out.println("Terrain : " + def);
         }
         return def;

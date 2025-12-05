@@ -17,31 +17,32 @@ public class Jeu extends Thread{
     private ResultatCombat dernierResultatCombat;
     private boolean hasEnded;
 
-    private static final int nbJoueurs = 4;
+    private int nbJoueurs;
+    private static final String[] COULEURS = {"Rouge", "Bleu", "Jaune", "Vert"};
 
     public TypePeuple randomPeuple(){
         int pick = new Random().nextInt(TypePeuple.values().length);
         return TypePeuple.values()[pick];
     }
 
-    public Jeu() {
+    // Nombre de joueurs et peuples choisis
+    public Jeu(int nombreJoueurs, TypePeuple[] peuplesChoisis) {
+        this.nbJoueurs = nombreJoueurs;
+        joueurs = new Joueur[nombreJoueurs];
 
-        joueurs = new Joueur[4]; //  À changer plus tard avec nbJoueurs
-
-        // Initialisation des joueurs avec des couleurs et peuples correspondants
-        // Rouge = Elfes, Bleu = Nains, Jaune = Humains, Vert = Gobelins
-        joueurs[0] = new Joueur(this, TypePeuple.ELFE, "Rouge");
-        joueurs[1] = new Joueur(this, TypePeuple.NAIN, "Bleu");
-        joueurs[2] = new Joueur(this, TypePeuple.HUMAIN, "Jaune");
-        joueurs[3] = new Joueur(this, TypePeuple.GOBELIN, "Vert");
+        // Initialisation des joueurs avec leurs peuples choisis
+        for (int i = 0; i < nombreJoueurs; i++) {
+            joueurs[i] = new Joueur(this, peuplesChoisis[i], COULEURS[i]);
+        }
         
         indexJoueurCourant = 0;
 
-        // Taille du plateau
-        if(nbJoueurs > 2){
-            Plateau.SIZE_X = 7; Plateau.SIZE_Y = 7;
-        } else { 
-            Plateau.SIZE_X = 6; 
+        // Taille du plateau selon le nombre de joueurs
+        if (nbJoueurs > 2) {
+            Plateau.SIZE_X = 7;
+            Plateau.SIZE_Y = 7;
+        } else {
+            Plateau.SIZE_X = 6;
             Plateau.SIZE_Y = 6;
         }
 
@@ -49,15 +50,18 @@ public class Jeu extends Thread{
         plateau = new Plateau();
         plateau.initialiser();
 
-        // Initialisation des unites des joueurs
+        // Initialisation des unités des joueurs
         initUnitesJoueurs(joueurs);
 
-        // Initialisation des unites sur le plateau
+        // Initialisation des unités sur le plateau
         plateau.addJoueur(joueurs);
 
-
         start();
+    }
 
+    // Constructeur par défaut (partie à 4 joueurs avec peuples par défaut)
+    public Jeu() {
+        this(4, new TypePeuple[]{TypePeuple.ELFE, TypePeuple.NAIN, TypePeuple.HUMAIN, TypePeuple.GOBELIN});
     }
 
     // Faire mieux après mais au moins ça existe
@@ -226,7 +230,7 @@ public class Jeu extends Thread{
         joueurs[indexJoueurCourant].ajouterPoints(pointsTour);
         System.out.println(joueurs[indexJoueurCourant].getCouleur() + " gagne " + pointsTour + " points pour ce tour. Total: " + joueurs[indexJoueurCourant].getScore());
         
-        indexJoueurCourant = (indexJoueurCourant + 1) % nbJoueurs;
+        indexJoueurCourant = (indexJoueurCourant + 1) % joueurs.length;
         
         // Si on revient au premier joueur, un tour complet est passé
         if (indexJoueurCourant == 0) {
@@ -264,7 +268,7 @@ public class Jeu extends Thread{
         
         // Trouver le gagnant
         Joueur gagnant = joueurs[0];
-        for (int i = 1; i < nbJoueurs; i++) {
+        for (int i = 1; i < joueurs.length; i++) {
             if (joueurs[i].getScore() > gagnant.getScore()) {
                 gagnant = joueurs[i];
             }

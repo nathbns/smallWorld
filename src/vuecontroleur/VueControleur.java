@@ -2,6 +2,9 @@ package vuecontroleur;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import javax.swing.*;
@@ -50,7 +53,7 @@ public class VueControleur extends JFrame implements Observer {
     private JLabel labelJoueurCourant, labelTour;
     private JLabel labelTerrainFavori;
     private JButton btnPasserTour;
-    private JButton btnCoupPrev, btnCoupNext;
+    private JButton btnCoupPrev, btnCoupNext, btnSauvegarde;
     private boolean reviewMode = false;
     private int reviewIndex = -1;
     private boolean finAnnoncee = false;
@@ -129,6 +132,13 @@ public class VueControleur extends JFrame implements Observer {
         contenu.add(btn4);
         
         contenu.add(Box.createVerticalStrut(40));
+
+        // Bouton de chargement de partie
+        JButton btnCharger = creerBoutonMenu("Charger la dernière partie");
+        btnCharger.addActionListener(e -> chargerPartie());
+        contenu.add(btnCharger); // Changer
+
+        contenu.add(Box.createVerticalStrut(20));
         
         // Info
         JLabel info = new JLabel("Les peuples sont attribués aléatoirement");
@@ -203,6 +213,101 @@ public class VueControleur extends JFrame implements Observer {
         setSize(sizeX * pxCase, sizeY * pxCase + 120);
         setLocationRelativeTo(null);
     }
+
+    private void chargerPartie(){
+        //Lecture du fichier de jeu si possible
+
+        File sauvegarde = new File("Partie.txt");
+        List<String> data = new ArrayList<>();
+        if (sauvegarde.exists()) {           // Try to create the file
+            System.out.println("Chargement de la sauvegarde : " + sauvegarde.getName());
+        } else {
+            System.out.println("Sauvegarde n'existe pas, créez en une au préalable");
+            return;
+        }
+        try (Scanner sauvReader = new Scanner(sauvegarde)) {
+            while (sauvReader.hasNextLine()) {
+                String fileData = sauvReader.nextLine();
+                data.add(fileData);
+                System.out.println(fileData);
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+        System.out.println(data);
+
+        // Recréation de la partie
+        if(data.get(14).contains("Joueur")){ // En cas de 4 joueurs
+            TypePeuple[] peuplesChoisis = new TypePeuple[4];
+            boolean[] joueursIA = new boolean[4];
+            for(int i = 0; i < 4; i++){
+                switch (data.get(6 + i*5)) {
+                    case "Humain" -> peuplesChoisis[i] = TypePeuple.HUMAIN;
+                    case "Nain" -> peuplesChoisis[i] = TypePeuple.NAIN;
+                    case "Elfe" -> peuplesChoisis[i] = TypePeuple.ELFE;
+                    case "Gobelin" -> peuplesChoisis[i] = TypePeuple.GOBELIN;
+                    default -> throw new IllegalStateException("Unexpected value");
+                };
+                joueursIA[i] = Boolean.parseBoolean(data.get(8 + i*4));
+            }
+            jeu = new Jeu(4,peuplesChoisis,joueursIA,data);
+
+            plateau = jeu.getPlateau();
+            sizeX = Plateau.SIZE_X;
+            sizeY = Plateau.SIZE_Y;
+
+            chargerLesIcones();
+
+            JPanel ecranJeu = creerEcranJeuOriginal();
+            mainContainer.add(ecranJeu, "JEU");
+            cardLayout.show(mainContainer, "JEU");
+
+            plateau.addObserver(this);
+            mettreAJourAffichage();
+
+            // Si le premier joueur est une IA, la faire jouer immédiatement
+            jouerTourIA();
+
+            setSize(sizeX * pxCase, sizeY * pxCase + 120);
+            setLocationRelativeTo(null);
+
+        }else{
+            TypePeuple[] peuplesChoisis = new TypePeuple[2];
+            boolean[] joueursIA = new boolean[2];
+            for(int i = 0; i < 2; i++){
+                switch (data.get(6 + i*5)) {
+                    case "Humain" -> peuplesChoisis[i] = TypePeuple.HUMAIN;
+                    case "Nain" -> peuplesChoisis[i] = TypePeuple.NAIN;
+                    case "Elfe" -> peuplesChoisis[i] = TypePeuple.ELFE;
+                    case "Gobelin" -> peuplesChoisis[i] = TypePeuple.GOBELIN;
+                    default -> throw new IllegalStateException("Unexpected value");
+                };
+                joueursIA[i] = Boolean.parseBoolean(data.get(8 + i*4));
+            }
+            jeu = new Jeu(2,peuplesChoisis,joueursIA,data);
+
+            plateau = jeu.getPlateau();
+            sizeX = Plateau.SIZE_X;
+            sizeY = Plateau.SIZE_Y;
+
+            chargerLesIcones();
+
+            JPanel ecranJeu = creerEcranJeuOriginal();
+            mainContainer.add(ecranJeu, "JEU");
+            cardLayout.show(mainContainer, "JEU");
+
+            plateau.addObserver(this);
+            mettreAJourAffichage();
+
+            // Si le premier joueur est une IA, la faire jouer immédiatement
+            jouerTourIA();
+
+            setSize(sizeX * pxCase, sizeY * pxCase + 120);
+            setLocationRelativeTo(null);
+        }
+
+    }
     
     // jeu
 
@@ -252,6 +357,17 @@ public class VueControleur extends JFrame implements Observer {
         btnCoupNext.setPreferredSize(new Dimension(40, 30));
         btnCoupNext.setEnabled(false);
         btnCoupNext.addActionListener(e -> montrerCoup(1));
+
+        btnSauvegarde = creerBoutonRetroJeu("Sauv");
+        btnSauvegarde.setPreferredSize(new Dimension(40, 30));
+        btnSauvegarde.setEnabled(true);
+        btnSauvegarde.addActionListener(e -> {
+            try {
+                sauvegarderJeu();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }); // Changer
         
         btnPasserTour = creerBoutonRetroJeu("[ FIN TOUR ]");
         // Fin de tour automatique : un coup par tour
@@ -261,6 +377,7 @@ public class VueControleur extends JFrame implements Observer {
         panelDroite.add(btnCoupPrev);
         panelDroite.add(btnCoupNext);
         panelDroite.add(btnPasserTour);
+        panelDroite.add(btnSauvegarde);
         
         JPanel panelGauche = new JPanel();
         panelGauche.setLayout(new BoxLayout(panelGauche, BoxLayout.Y_AXIS));
@@ -393,7 +510,7 @@ public class VueControleur extends JFrame implements Observer {
                         Case caseSurvolee = plateau.getCases()[xx][yy];
                         if(caseClic1 != null && caseSurvolee.getUnites() != null && caseSurvolee.getUnites().getProprietaire() != caseClic1.getUnites().getProprietaire()){
                                 combatPreview.defenseUnite = caseSurvolee.getUnites().calculDefenseTotale();
-                                System.out.println(combatPreview.attaqueUnite + " contre " + combatPreview.defenseUnite);
+                                //System.out.println(combatPreview.attaqueUnite + " contre " + combatPreview.defenseUnite);
                                 combatPreview.calculerPourcentages(caseClic1,caseSurvolee);
                                 mettreAJourAffichage();
                         }
@@ -767,4 +884,10 @@ public class VueControleur extends JFrame implements Observer {
             default: return RETRO_TEXT;
         }
     }
+
+    // Enregistre la partie dans un fichier
+    private void sauvegarderJeu() throws IOException {
+        jeu.enregistrerPartie();
+    }
+
 }

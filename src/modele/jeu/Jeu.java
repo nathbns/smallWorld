@@ -5,6 +5,9 @@ import modele.plateau.Case;
 import modele.plateau.Plateau;
 
 import java.awt.Point;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
@@ -76,12 +79,164 @@ public class Jeu extends Thread{
         start();
     }
 
+    // Variante avec chargement depuis un fichier
+    public Jeu(int nombreJoueurs, TypePeuple[] peuplesChoisis, boolean[] joueursIA, List<String> data) {
+        this.nbJoueurs = nombreJoueurs;
+        this.joueursIA = joueursIA != null ? joueursIA : new boolean[nombreJoueurs];
+        joueurs = new Joueur[nombreJoueurs];
+
+        // Initialisation des joueurs avec leurs peuples choisis
+        for (int i = 0; i < nombreJoueurs; i++) {
+            joueurs[i] = new Joueur(this, peuplesChoisis[i], COULEURS[i]);
+        }
+
+        indexJoueurCourant = Integer.parseInt(data.get(3));
+        nbToursMax = Integer.parseInt(data.get(2));
+        tourActuel = Integer.parseInt(data.get(1));
+
+        // Taille du plateau selon le nombre de joueurs
+        if (nbJoueurs > 2) {
+            Plateau.SIZE_X = 7;
+            Plateau.SIZE_Y = 7;
+        } else {
+            Plateau.SIZE_X = 6;
+            Plateau.SIZE_Y = 6;
+        }
+
+        // Initialisation du plateau
+        plateau = new Plateau();
+        plateau.initialiser();
+
+        // Réécriture des données du plateau
+        if (nbJoueurs > 2) {
+            for(int x = 0; x < 7 ; x++){
+                for(int y = 0; y < 7 ; y++){
+                    plateau.changeBiomeFromPos(data.get(25 + y + x*7),x,y);
+                }
+            }
+        } else {
+            for(int x = 0; x < 6 ; x++){
+                for(int y = 0; y < 6 ; y++){
+                    plateau.changeBiomeFromPos(data.get(15 + y + x*6),x,y); // VERIF LE 25
+                }
+            }
+        }
+
+        // Création et placement de toutes les unités sur la plateau
+        if (nbJoueurs > 2) {
+            int readLine = 75;
+            for(int joueur = 0; joueur < 4; joueur++){
+                while(readLine < data.size() && !data.get(readLine).contains("joueur")){ // Tant que le joueur a des unites
+                    int nb = Integer.parseInt(data.get(readLine));
+                    switch (joueurs[joueur].getPeuple()){
+                        case HUMAIN:
+                            //System.out.println("Humain" + readLine);
+                            Humain h = new Humain(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(h);
+                            h.setProprietaire(joueurs[joueur]);
+                            h.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2))); // Infos de l'unité
+                            h.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(h,nb/7,nb%7); // Le mettre sur la bonne case
+                            break;
+                        case GOBELIN:
+                            //System.out.println("Gob" + readLine);
+                            Gobelin g = new Gobelin(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(g);
+                            g.setProprietaire(joueurs[joueur]);
+                            g.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2)));
+                            g.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(g,nb/7,nb%7);
+                            break;
+                        case NAIN:
+                            //System.out.println("Nain" + readLine);
+                            Nain n = new Nain(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(n);
+                            n.setProprietaire(joueurs[joueur]);
+                            n.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2)));
+                            n.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(n,nb/7,nb%7);
+                            break;
+                        case ELFE:
+                            //System.out.println("Elfe" + readLine);
+                            Elfe e = new Elfe(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(e);
+                            e.setProprietaire(joueurs[joueur]);
+                            e.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2)));
+                            e.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(e,nb/7,nb%7);
+                            break;
+                    }
+                    if(readLine+1 < data.size() && !data.get(readLine+1).contains("joueur")){ // Lire la prochaine unité
+                        readLine+=4;
+                    }else{
+                        readLine++; // Passer au prochain joueur s'il n'en a plus
+                    }
+                }
+                readLine++;
+            }
+        } else { // Cas ou 2 joueurs
+            int readLine = 52;
+            for(int joueur = 0; joueur < 2; joueur++){
+                while(readLine < data.size() && !data.get(readLine).contains("joueur")){ // Tant que le joueur a des unites
+                    int nb = Integer.parseInt(data.get(readLine));
+                    switch (joueurs[joueur].getPeuple()){
+                        case HUMAIN:
+                            //System.out.println("Humain" + readLine);
+                            Humain h = new Humain(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(h);
+                            h.setProprietaire(joueurs[joueur]);
+                            h.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2))); // Infos de l'unité
+                            h.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(h,nb/6,nb%6); // Le mettre sur la bonne case
+                            break;
+                        case GOBELIN:
+                            //System.out.println("Gob" + readLine);
+                            Gobelin g = new Gobelin(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(g);
+                            g.setProprietaire(joueurs[joueur]);
+                            g.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2)));
+                            g.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(g,nb/6,nb%6);
+                            break;
+                        case NAIN:
+                            //System.out.println("Nain" + readLine);
+                            Nain n = new Nain(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(n);
+                            n.setProprietaire(joueurs[joueur]);
+                            n.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2)));
+                            n.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(n,nb/6,nb%6);
+                            break;
+                        case ELFE:
+                            //System.out.println("Elfe" + readLine);
+                            Elfe e = new Elfe(plateau,Integer.parseInt(data.get(readLine+1)));
+                            joueurs[joueur].ajouterUnite(e);
+                            e.setProprietaire(joueurs[joueur]);
+                            e.setJoueCeTour(Boolean.parseBoolean(data.get(readLine+2)));
+                            e.setDepalceOuAttaque(Boolean.parseBoolean(data.get(readLine+3)));
+                            plateau.setUniteSurCase(e,nb/6,nb%6);
+                            break;
+                    }
+                    if(readLine+1 < data.size() && !data.get(readLine+1).contains("joueur")){ // Lire la prochaine unité
+                        readLine+=4;
+                    }else{
+                        readLine++; // Passer au prochain joueur s'il n'en a plus
+                    }
+                }
+                readLine++;
+            }
+        }
+
+        // Le thread n'est plus indispensable pour les actions synchrones
+        // mais on le conserve pour compatibilité éventuelle.
+        start();
+    }
+
     // Constructeur par défaut (partie à 4 joueurs avec peuples par défaut)
     public Jeu() {
         this(4, new TypePeuple[]{TypePeuple.ELFE, TypePeuple.NAIN, TypePeuple.HUMAIN, TypePeuple.GOBELIN});
     }
 
-    // Faire mieux après mais au moins ça existe
     protected void initUnitesJoueurs(Joueur [] j){
 
         Random rand = new Random();
@@ -487,6 +642,54 @@ public class Jeu extends Thread{
             this.joueurCouleur = couleur;
             this.peuple = peuple;
         }
+    }
+
+    // Enregistrement de la partie dans un fichier
+    public void enregistrerPartie() throws IOException {
+        File sauvegarde = new File("Partie.txt");
+        if (sauvegarde.createNewFile()) {           // Try to create the file
+            System.out.println("Création de la sauvegarde : " + sauvegarde.getName());
+        } else {
+            System.out.println("Sauvegarde existe, remplacement de la sauvegarde");
+            sauvegarde.delete();
+            sauvegarde.createNewFile();
+        }
+        FileWriter sauvegardeWriter = new FileWriter("Partie.txt", true); // Writer en mode append pour la partie
+        sauvegardeWriter.write("Partie :" + "\n"); // Enregistrement de la partie
+
+        sauvegardeWriter.write(tourActuel + "\n"); // Tour actuel
+        sauvegardeWriter.write(nbToursMax + "\n"); // Tour max
+        sauvegardeWriter.write(indexJoueurCourant + "\n"); // Joueur courant
+
+        // Enregistrement de chaque joueur
+        for(int idJoueur = 0; idJoueur < joueurs.length; idJoueur++){
+            sauvegardeWriter.write("Joueur " + idJoueur + "\n"); // Nb
+            sauvegardeWriter.write(joueurs[idJoueur].getScore() + "\n"); // Score
+            sauvegardeWriter.write(joueurs[idJoueur].getPeuple().getNom() + "\n"); // PeupleJoue
+            sauvegardeWriter.write(joueurs[idJoueur].getCouleur() + "\n"); // Couleur
+            sauvegardeWriter.write(joueursIA[idJoueur] + "\n"); // Si le joueur est une ia ou pas
+        }
+
+        // Enregistrement des biomes du plateau
+        sauvegardeWriter.write("Plateau :" + "\n");
+        for(int x = 0; x < Plateau.SIZE_X; x++){
+            for(int y = 0; y < Plateau.SIZE_Y; y++){
+                sauvegardeWriter.write(plateau.getPosition(x,y).getBiome().toString() + "\n"); // Enregistrement de chaque case
+            }
+        }
+
+        // Enregistrement des unites de chaque joueur
+        for(int idJoueur = 0; idJoueur < joueurs.length; idJoueur++){
+            sauvegardeWriter.write("Unités joueur " + idJoueur + "\n"); // Enregistrement de chaque case
+            for(int idUnite = 0; idUnite < joueurs[idJoueur].getUnites().size(); idUnite++){ // Parcours des unités
+                sauvegardeWriter.write(joueurs[idJoueur].getUnite(idUnite).getCase().getId() + "\n"); // Id de la case
+                sauvegardeWriter.write(joueurs[idJoueur].getUnite(idUnite).getNbUnit() + "\n"); // Nb d'unités sur la case
+                sauvegardeWriter.write(joueurs[idJoueur].getUnite(idUnite).getJoueCeTour() + "\n"); // Si l'unité a joué
+                sauvegardeWriter.write(joueurs[idJoueur].getUnite(idUnite).getDepalceOuAttaque() + "\n"); // Si l'unité peut attaquer
+            }
+        }
+
+        sauvegardeWriter.close();
     }
 
 }

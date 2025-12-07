@@ -12,6 +12,7 @@ public class Case {
     protected Biome biome;
     protected Unites u;
     protected Plateau plateau;
+    private int id;
 
 
 
@@ -21,15 +22,17 @@ public class Case {
 
 
 
-    public Case(Plateau _plateau) {
+    public Case(Plateau _plateau, int _id) {
 
         plateau = _plateau;
+        id = _id;
     }
 
-    public Case(Plateau _plateau, Biome b) {
+    public Case(Plateau _plateau, Biome b, int _id) {
 
         plateau = _plateau;
         biome = b;
+        id = _id;
     }
 
     public void setBiome(Biome b){
@@ -44,6 +47,9 @@ public class Case {
         return u;
     }
 
+    public int getId() {
+        return id;
+    }
 
     public boolean getTerrain() {
         if (biome == null) {

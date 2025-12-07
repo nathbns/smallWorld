@@ -55,6 +55,22 @@ public abstract class Unites {
         aJoueCeTour = true;
     }
 
+    public boolean getJoueCeTour() {
+        return aJoueCeTour;
+    }
+
+    public boolean getDepalceOuAttaque() {
+        return aDeplaceOuAttaque;
+    }
+
+    public void setJoueCeTour(boolean b) {
+        aJoueCeTour = b;
+    }
+
+    public void setDepalceOuAttaque(boolean b) {
+        aDeplaceOuAttaque = b;
+    }
+
     public void marquerCommeFinDeTour() {
         aDeplaceOuAttaque = true;
         aJoueCeTour = true;

@@ -28,6 +28,16 @@ public enum TypePeuple {
         return TypePeuple.values()[pick];
     }
 
+    public TypePeuple stringToPeuple(String st){
+        return switch (st) {
+            case "Humain" -> HUMAIN;
+            case "Nain" -> NAIN;
+            case "Elfe" -> ELFE;
+            case "Gobelin" -> GOBELIN;
+            default -> throw new IllegalStateException("Unexpected value: " + st);
+        };
+    }
+
     public String getNom() {
         return nom;
     }

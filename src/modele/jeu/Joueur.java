@@ -10,7 +10,7 @@ public class Joueur {
     private TypePeuple peuple;
     private int score;
     private List<Unites> unites;
-    private String couleur; // Pour identifier visuellement le joueur
+    private String couleur;
 
     public Joueur(Jeu _jeu, TypePeuple _peuple, String _couleur) {
         jeu = _jeu;

@@ -130,7 +130,6 @@ public class Jeu extends Thread{
                     int nb = Integer.parseInt(data.get(readLine));
                     switch (joueurs[joueur].getPeuple()){
                         case HUMAIN:
-                            //System.out.println("Humain" + readLine);
                             Humain h = new Humain(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(h);
                             h.setProprietaire(joueurs[joueur]);
@@ -139,7 +138,6 @@ public class Jeu extends Thread{
                             plateau.setUniteSurCase(h,nb/7,nb%7); // Le mettre sur la bonne case
                             break;
                         case GOBELIN:
-                            //System.out.println("Gob" + readLine);
                             Gobelin g = new Gobelin(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(g);
                             g.setProprietaire(joueurs[joueur]);
@@ -148,7 +146,6 @@ public class Jeu extends Thread{
                             plateau.setUniteSurCase(g,nb/7,nb%7);
                             break;
                         case NAIN:
-                            //System.out.println("Nain" + readLine);
                             Nain n = new Nain(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(n);
                             n.setProprietaire(joueurs[joueur]);
@@ -157,7 +154,6 @@ public class Jeu extends Thread{
                             plateau.setUniteSurCase(n,nb/7,nb%7);
                             break;
                         case ELFE:
-                            //System.out.println("Elfe" + readLine);
                             Elfe e = new Elfe(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(e);
                             e.setProprietaire(joueurs[joueur]);
@@ -181,7 +177,6 @@ public class Jeu extends Thread{
                     int nb = Integer.parseInt(data.get(readLine));
                     switch (joueurs[joueur].getPeuple()){
                         case HUMAIN:
-                            //System.out.println("Humain" + readLine);
                             Humain h = new Humain(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(h);
                             h.setProprietaire(joueurs[joueur]);
@@ -190,7 +185,6 @@ public class Jeu extends Thread{
                             plateau.setUniteSurCase(h,nb/6,nb%6); // Le mettre sur la bonne case
                             break;
                         case GOBELIN:
-                            //System.out.println("Gob" + readLine);
                             Gobelin g = new Gobelin(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(g);
                             g.setProprietaire(joueurs[joueur]);
@@ -199,7 +193,6 @@ public class Jeu extends Thread{
                             plateau.setUniteSurCase(g,nb/6,nb%6);
                             break;
                         case NAIN:
-                            //System.out.println("Nain" + readLine);
                             Nain n = new Nain(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(n);
                             n.setProprietaire(joueurs[joueur]);
@@ -208,7 +201,6 @@ public class Jeu extends Thread{
                             plateau.setUniteSurCase(n,nb/6,nb%6);
                             break;
                         case ELFE:
-                            //System.out.println("Elfe" + readLine);
                             Elfe e = new Elfe(plateau,Integer.parseInt(data.get(readLine+1)));
                             joueurs[joueur].ajouterUnite(e);
                             e.setProprietaire(joueurs[joueur]);
@@ -227,8 +219,6 @@ public class Jeu extends Thread{
             }
         }
 
-        // Le thread n'est plus indispensable pour les actions synchrones
-        // mais on le conserve pour compatibilité éventuelle.
         start();
     }
 
@@ -330,7 +320,6 @@ public class Jeu extends Thread{
                 }
             }
         }
-        // reposer
         for(int x=0;x<Plateau.SIZE_X;x++){
             for(int y=0;y<Plateau.SIZE_Y;y++){
                 SnapshotCell cell = snap.cells[x][y];
@@ -437,12 +426,20 @@ public class Jeu extends Thread{
                     System.out.println(getJoueurCourant().getCouleur() + " a gagné un combat ! Points: " + getJoueurCourant().getScore());
                 }
                 if(resultatCombat != null){
+                    // Si l'unité a déjà déplacé, c'est une attaque après déplacement (OK)
+                    // Sinon, c'est une attaque sans déplacement (ne peut plus bouger après)
+                    if (!unite.aDeplaceOuAttaque()) {
+                        unite.marquerAttaqueSansDeplacement();
+                    } else {
+                        // L'unité a déplacé puis attaqué, fin du tour
+                        unite.marquerCommeJouee();
+                    }
                     enregistrerCoup(dep, arr);
                     snapshots.add(captureSnapshot());
                 }
             }
         } else if (uniteArr != null && uniteArr.getProprietaire() == getJoueurCourant()) {
-            // C'est une superposition
+            // C'est une superposition (déplacement vers une unité alliée)
             List<Case> casesAlliees = plateau.getCasesAlliees(dep, getJoueurCourant());
             if (casesAlliees.contains(arr)) {
                 if(unite.getNbUnit() > 1){ // Deplacement d'une unite vers l'autre case
@@ -460,10 +457,16 @@ public class Jeu extends Thread{
             }
 
         } else {
-            // C'est un déplacement
+            // C'est un déplacement simple
+            // Vérifier que l'unité n'a pas attaqué sans se déplacer
+            if (unite.aAttaqueSansDeplacement()) {
+                return null; // L'unité ne peut plus bouger après avoir attaqué sans se déplacer
+            }
+            
             List<Case> casesAccessibles = plateau.getCasesAccessibles(dep, getJoueurCourant());
             if (casesAccessibles.contains(arr)) {
                 plateau.deplacerUnite(dep, arr);
+                // Marquer comme ayant déplacé (mais pas comme ayant joué, pour permettre l'attaque après)
                 unite.marquerDeplaceOuAttaque();
                 enregistrerCoup(dep, arr);
                 snapshots.add(captureSnapshot());
@@ -472,9 +475,6 @@ public class Jeu extends Thread{
         
         // Sauvegarder le résultat du combat pour l'affichage
         dernierResultatCombat = resultatCombat;
-        
-        // NE PAS passer au joueur suivant automatiquement
-        // Le joueur doit cliquer sur "Passer le tour" pour finir son tour
         
         return resultatCombat;
     }

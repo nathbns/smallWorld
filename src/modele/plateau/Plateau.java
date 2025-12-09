@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package modele.plateau;
 
 import modele.jeu.Joueur;
@@ -11,16 +6,17 @@ import modele.jeu.peuple.*;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Observable;
 import java.util.Random;
+import java.util.Set;
 
 
 public class Plateau extends Observable {
 
     public static int SIZE_X = 8;
     public static int SIZE_Y = 8;
-
 
     private HashMap<Case, Point> map = new  HashMap<Case, Point>(); // permet de récupérer la position d'une case à partir de sa référence
     private Case[][] grilleCases = new Case[SIZE_X][SIZE_Y]; // permet de récupérer une case à partir de ses coordonnées
@@ -48,17 +44,11 @@ public class Plateau extends Observable {
             }
 
         }
-
     }
 
     public void initialiser() {
-
-//        c.allerSurCase(grilleCases[4][7]); // Unite pour exemple
-//        Elfe c = new Elfe(this);
-
         setChanged();
         notifyObservers();
-
     }
 
     public void setUniteSurCase(Unites unit, int x, int y){
@@ -67,7 +57,7 @@ public class Plateau extends Observable {
 
     public void addJoueur(Joueur [] j) {
 
-        for (int jo = 0; jo < j.length; jo++){ // Boucle sur les joueurs
+        for (int jo = 0; jo < j.length; jo++){ 
 
             if(j[jo] == null){ // Si moins de joueurs
                 continue;
@@ -125,7 +115,6 @@ public class Plateau extends Observable {
             }
         }
 
-
         setChanged();
         notifyObservers();
 
@@ -170,26 +159,9 @@ public class Plateau extends Observable {
         notifyObservers();
     }
 
-    /**
-     * Calcule la distance réelle entre deux points.
-     * Les déplacements en diagonale coûtent plus cher racine carre de 2
-     * Un déplacement en ligne droite coûte 1, en diagonale ça coute plus
-     */
-    private double calculerDistance(int dx, int dy) {
-        int absDx = Math.abs(dx);
-        int absDy = Math.abs(dy);
-        
-        // Distance avec diagonales plus coûteuses
-        // Chaque pas diagonal compte comme √2, chaque pas droit compte comme 1
-        int diagonales = Math.min(absDx, absDy);
-        int lignesDroites = Math.abs(absDx - absDy);
-        
-        return diagonales * Math.sqrt(2) + lignesDroites;
-    }
-
-    /**
-     * Calcule les cases accessibles pour un déplacement depuis une case donnée
-     */
+    // Calcule les cases accessibles pour un déplacement depuis une case donnée
+    // Règle : déplacement de N cases sur les 4 cases adjacentes, pas de diagonale
+    // Ne peut pas passer par une case avec une unité du même type
     public List<Case> getCasesAccessibles(Case caseDepart, Joueur joueur) {
         List<Case> casesAccessibles = new ArrayList<>();
         
@@ -204,44 +176,95 @@ public class Plateau extends Observable {
             return casesAccessibles;
         }
         
-        // Si l'unité a déjà déplacé ou attaqué, elle ne peut plus bouger
-        if (unite.aDeplaceOuAttaque()) {
+        // Si l'unité a déjà joué ce tour, elle ne peut plus bouger
+        if (unite.aJoueCeTour()) {
+            return casesAccessibles;
+        }
+        
+        // Si l'unité a attaqué sans se déplacer, elle ne peut plus bouger
+        if (unite.aAttaqueSansDeplacement()) {
             return casesAccessibles;
         }
         
         Point posDepart = map.get(caseDepart);
-        int portee = unite.getPorteeDeplacement();
+        int mouvement = unite.getPorteeDeplacement(); // Nombre de cases de mouvement
         
-        // Parcourir toutes les cases potentiellement dans la portée de déplacement
-        // On élargit la zone de recherche pour couvrir les diagonales possibles
-        for (int dx = -portee; dx <= portee; dx++) {
-            for (int dy = -portee; dy <= portee; dy++) {
-                if (dx == 0 && dy == 0) continue; // Pas la case de départ
-                
-                // Vérifier que la distance réelle est dans la portée
-                double distance = calculerDistance(dx, dy);
-                if (distance > portee) continue; // Trop loin en diagonale
-                
-                int newX = posDepart.x + dx;
-                int newY = posDepart.y + dy;
-                
-                if (contenuDansGrille(new Point(newX, newY))) {
-                    Case c = grilleCases[newX][newY];
-                    
-                    // Une case est accessible si elle est vide ou contient une unité ennemie
-                    if (c.getUnites() == null || c.getUnites().getProprietaire() != joueur) {
-                        casesAccessibles.add(c);
-                    }
-                }
-            }
-        }
+        // Set pour éviter les doublons
+        Set<Point> casesVisitees = new HashSet<>();
+        
+        // Exploration récursive depuis la case de départ
+        explorerCasesRecursif(posDepart, mouvement, joueur, unite.getTypePeuple(), 
+                              casesAccessibles, casesVisitees);
         
         return casesAccessibles;
     }
+    
+    // Methode récursive qui explore les cases accessibles
+    private void explorerCasesRecursif(Point position, int mouvementRestant, Joueur joueur, TypePeuple typePeuple, List<Case> resultat, Set<Point> visites) {
+        // Si plus de mouvement disponible, on s'arrête
+        if (mouvementRestant < 0) {
+            return;
+        }
+        
+        // Éviter les cycles : si on a déjà visité cette position, on s'arrête
+        if (visites.contains(position)) {
+            return;
+        }
+        
+        // Vérifier que la position est dans la grille
+        if (!contenuDansGrille(position)) {
+            return;
+        }
+        
+        Case caseActuelle = grilleCases[position.x][position.y];
+        
+        // Si la case contient une unité du même type (alliée) et ce n'est pas la case de départ, on ne peut pas passer
+        if (!visites.isEmpty() && caseActuelle.getUnites() != null && 
+            caseActuelle.getUnites().getTypePeuple() == typePeuple) {
+            return;
+        }
+        
+        // Ajouter cette case aux résultats si elle est accessible (vide ou ennemie)
+        if (caseActuelle.getUnites() == null || 
+            caseActuelle.getUnites().getProprietaire() != joueur) {
+            if (!resultat.contains(caseActuelle)) {
+                resultat.add(caseActuelle);
+            }
+        }
+        
+        // Si plus de mouvement, on ne continue pas l'exploration
+        if (mouvementRestant == 0) {
+            return;
+        }
+        
+        // Marquer comme visitée
+        visites.add(new Point(position.x, position.y));
+        
+        // Seulement les 4 directions adjacentes (pas de diagonale)
+        int[][] directions = {
+            {0, 1},   // Droite
+            {1, 0},   // Bas
+            {0, -1},  // Gauche
+            {-1, 0}   // Haut
+        };
+        
+        // Explorer récursivement les 4 cases adjacentes
+        for (int[] dir : directions) {
+            int newX = position.x + dir[0];
+            int newY = position.y + dir[1];
+            Point nouvellePosition = new Point(newX, newY);
+            
+            // Continuer l'exploration avec un mouvement de moins
+            explorerCasesRecursif(nouvellePosition, mouvementRestant - 1, joueur, 
+                                 typePeuple, resultat, visites);
+        }
+        
+        // Retirer de la visite pour permettre d'autres chemins vers cette case
+        visites.remove(position);
+    }
 
-    /**
-     * Calcule les cases attaquables depuis une case donnée
-    */
+    // Calcule les cases attaquables depuis une case donnée
+    // Règle : attaque seulement les unités adjacentes (1 case, pas de diagonale)
     public List<Case> getCasesAttaquables(Case caseDepart, Joueur joueur) {
         List<Case> casesAttaquables = new ArrayList<>();
         
@@ -262,28 +285,26 @@ public class Plateau extends Observable {
         }
         
         Point posDepart = map.get(caseDepart);
-        int portee = unite.getPorteeAttaque();
         
-        // Parcourir toutes les cases potentiellement dans la portée d'attaque
-        for (int dx = -portee; dx <= portee; dx++) {
-            for (int dy = -portee; dy <= portee; dy++) {
-                if (dx == 0 && dy == 0) continue; // Pas la case de départ
+        // Seulement les 4 cases adjacentes (pas de diagonale)
+        int[][] directions = {
+            {0, 1},   // Droite
+            {1, 0},   // Bas
+            {0, -1},  // Gauche
+            {-1, 0}   // Haut
+        };
+        
+        // Parcourir les 4 cases adjacentes
+        for (int[] dir : directions) {
+            int newX = posDepart.x + dir[0];
+            int newY = posDepart.y + dir[1];
+            
+            if (contenuDansGrille(new Point(newX, newY))) {
+                Case c = grilleCases[newX][newY];
                 
-                // Vérifier que la distance réelle est dans la portée
-                // Les diagonales coûtent plus cher (√2 ≈ 1.41)
-                double distance = calculerDistance(dx, dy);
-                if (distance > portee) continue; // Trop loin en diagonale
-                
-                int newX = posDepart.x + dx;
-                int newY = posDepart.y + dy;
-                
-                if (contenuDansGrille(new Point(newX, newY))) {
-                    Case c = grilleCases[newX][newY];
-                    
-                    // Une case est attaquable si elle contient une unité ennemie
-                    if (c.getUnites() != null && c.getUnites().getProprietaire() != joueur) {
-                        casesAttaquables.add(c);
-                    }
+                // Une case est attaquable si elle contient une unité ennemie
+                if (c.getUnites() != null && c.getUnites().getProprietaire() != joueur) {
+                    casesAttaquables.add(c);
                 }
             }
         }
@@ -291,9 +312,8 @@ public class Plateau extends Observable {
         return casesAttaquables;
     }
 
-    /**
-     * Calcule les cases accessibles pour un allie
-     */
+    // Calcule les cases accessibles pour un allié (superposition)
+    // Règle : déplacement de N cases sur les 4 cases adjacentes, vers une unité alliée
     public List<Case> getCasesAlliees(Case caseDepart, Joueur joueur) {
         List<Case> casesAlliees = new ArrayList<>();
 
@@ -308,118 +328,99 @@ public class Plateau extends Observable {
             return casesAlliees;
         }
 
-        // Si l'unité a déjà déplacé ou attaqué, elle ne peut plus bouger
-        if (unite.aDeplaceOuAttaque()) {
+        // Si l'unité a déjà joué ce tour, elle ne peut plus bouger
+        if (unite.aJoueCeTour()) {
+            return casesAlliees;
+        }
+        
+        // Si l'unité a attaqué sans se déplacer, elle ne peut plus bouger
+        if (unite.aAttaqueSansDeplacement()) {
             return casesAlliees;
         }
 
         Point posDepart = map.get(caseDepart);
-        int portee = unite.getPorteeDeplacement();
-
-        // Parcourir toutes les cases dans la portée de déplacement
-        for (int dx = -portee; dx <= portee; dx++) {
-            for (int dy = -portee; dy <= portee; dy++) {
-                if (dx == 0 && dy == 0) continue; // Pas la case de départ
-
-                // Vérifier que la distance réelle est dans la portée
-                double distance = calculerDistance(dx, dy);
-                if (distance > portee) continue; // Trop loin en diagonale
-
-                int newX = posDepart.x + dx;
-                int newY = posDepart.y + dy;
-
-                if (contenuDansGrille(new Point(newX, newY))) {
-                    Case c = grilleCases[newX][newY];
-
-                    // Une case est accessible pour l'allie si elle ou contient une unité alliee
-                    if (c.getUnites() != null && c.getUnites().getProprietaire() == joueur) {
-                        casesAlliees.add(c);
-                    }
-                }
-            }
-        }
-
+        int mouvement = unite.getPorteeDeplacement(); // Nombre de cases de mouvement
+        
+        // Set pour éviter les doublons
+        Set<Point> casesVisitees = new HashSet<>();
+        
+        // Exploration récursive depuis la case de départ (cherche les unités alliées)
+        explorerCasesAllieesRecursif(posDepart, mouvement, joueur, unite.getTypePeuple(), 
+                                     casesAlliees, casesVisitees);
+        
         return casesAlliees;
     }
-
-    /**
-     * Effectue une attaque entre deux cases
-     * @return ResultatCombat avec les détails du combat
-     */
-    /*
-    public modele.jeu.ResultatCombat attaquer2(Case caseAttaquant, Case caseDefenseur) {
-        if (caseAttaquant == null || caseDefenseur == null) {
-            return null;
+    
+    // Méthode récursive qui explore les cases avec des unités alliées
+    private void explorerCasesAllieesRecursif(Point position, int mouvementRestant, Joueur joueur, 
+                                              TypePeuple typePeuple, List<Case> resultat, Set<Point> visites) {
+        // Si plus de mouvement disponible, on s'arrête
+        if (mouvementRestant < 0) {
+            return;
         }
         
-        Unites attaquant = caseAttaquant.getUnites();
-        Unites defenseur = caseDefenseur.getUnites();
-        
-        if (attaquant == null || defenseur == null) {
-            return null;
+        // Éviter les cycles : si on a déjà visité cette position, on s'arrête
+        if (visites.contains(position)) {
+            return;
         }
         
-        // Calcul aléatoire du combat
-        Random rand = new Random();
-        int diceAtt = rand.nextInt(6); // +0 à +5
-        int diceDef = rand.nextInt(6); // +0 à +5
-        int forceAtt = attaquant.getForceAttaque() + diceAtt;
-        int forceDef = defenseur.getForceDefense() + diceDef;
-        
-        // Bonus de terrain pour le défenseur
-        String descriptionTerrain = "";
-        Biome biomeDefenseur = caseDefenseur.getBiome();
-        if (biomeDefenseur == Biome.MONTAGNE && defenseur.getTypePeuple() == TypePeuple.NAIN) {
-            forceDef += 2;
-            descriptionTerrain = " (Bonus Montagne +2)";
-        } else if (biomeDefenseur == Biome.FORET && defenseur.getTypePeuple() == TypePeuple.ELFE) {
-            forceDef += 2;
-            descriptionTerrain = " (Bonus Forêt +2)";
+        // Vérifier que la position est dans la grille
+        if (!contenuDansGrille(position)) {
+            return;
         }
         
-        // L'attaquant gagne si sa force est supérieure
-        boolean attaquantGagne = forceAtt > forceDef;
+        Case caseActuelle = grilleCases[position.x][position.y];
         
-        // Créer le résultat avant de modifier le plateau
-        modele.jeu.ResultatCombat resultat = new modele.jeu.ResultatCombat(
-            attaquant, defenseur, forceAtt, forceDef, attaquantGagne, descriptionTerrain
-        );
-        
-        if (attaquantGagne) {
-            // Le défenseur est éliminé
-            Joueur joueurDefenseur = defenseur.getProprietaire();
-            defenseur.quitterCase(); // L'unité défenseur quitte sa case
-            if (joueurDefenseur != null) {
-                joueurDefenseur.retirerUnite(defenseur); // Retirer de la liste du joueur
+        // Si la case contient une unité alliée (même joueur et même type), on l'ajoute
+        if (!visites.isEmpty() && caseActuelle.getUnites() != null && 
+            caseActuelle.getUnites().getProprietaire() == joueur &&
+            caseActuelle.getUnites().getTypePeuple() == typePeuple) {
+            if (!resultat.contains(caseActuelle)) {
+                resultat.add(caseActuelle);
             }
-            // L'attaquant prend sa place
-            attaquant.allerSurCase(caseDefenseur);
         }
         
-        // Marquer l'unité comme ayant joué
-        attaquant.marquerCommeJouee();
+        // Si la case contient une unité ennemie ou d'un autre type, on ne peut pas passer
+        if (!visites.isEmpty() && caseActuelle.getUnites() != null && 
+            (caseActuelle.getUnites().getProprietaire() != joueur ||
+             caseActuelle.getUnites().getTypePeuple() != typePeuple)) {
+            return;
+        }
         
-        setChanged();
-        notifyObservers();
+        // Si plus de mouvement, on ne continue pas l'exploration
+        if (mouvementRestant == 0) {
+            return;
+        }
         
-        return resultat;
+        // Marquer comme visitée
+        visites.add(new Point(position.x, position.y));
+        
+        // Seulement les 4 directions adjacentes (pas de diagonale)
+        int[][] directions = {
+            {0, 1},   // Droite
+            {1, 0},   // Bas
+            {0, -1},  // Gauche
+            {-1, 0}   // Haut
+        };
+        
+        // Explorer récursivement les 4 cases adjacentes
+        for (int[] dir : directions) {
+            int newX = position.x + dir[0];
+            int newY = position.y + dir[1];
+            Point nouvellePosition = new Point(newX, newY);
+            
+            // Continuer l'exploration avec un mouvement de moins
+            explorerCasesAllieesRecursif(nouvellePosition, mouvementRestant - 1, joueur, 
+                                        typePeuple, resultat, visites);
+        }
+        
+        // Retirer de la visite pour permettre d'autres chemins vers cette case
+        visites.remove(position);
     }
-    */
 
-
-    /** Indique si p est contenu dans la grille
-     */
+    // Indique si p est contenu dans la grille
     private boolean contenuDansGrille(Point p) {
         return p.x >= 0 && p.x < SIZE_X && p.y >= 0 && p.y < SIZE_Y;
-    }
-    
-    private Case caseALaPosition(Point p) {
-        Case retour = null;
-        
-        if (contenuDansGrille(p)) {
-            retour = grilleCases[p.x][p.y];
-        }
-        return retour;
     }
 
     public Point getPosition(Case c) {
@@ -505,9 +506,6 @@ public class Plateau extends Observable {
                 }
             }
         }
-
-        // Marquer l'unité comme ayant joué
-        attaquant.marquerCommeJouee();
 
         setChanged();
         notifyObservers();

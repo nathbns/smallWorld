@@ -79,9 +79,6 @@ public class CombatPreview extends JPanel {
         pourcentAttaque.setText(Math.round(attaquePourcent * 100) + " %");
         pourcentDefense.setText(Math.round((1 - attaquePourcent) * 100) + " %");
 
-        //pourcentAttaque.setLocation(getWidth()-35,getHeight()-35); Inutile
-        //pourcentDefense.setLocation(getWidth()-35,getHeight()-35);
-
         pourcentAttaque.setFont(new Font("Arial",Font.BOLD,22));
         pourcentDefense.setFont(new Font("Arial",Font.BOLD,22));
 
